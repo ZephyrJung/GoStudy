@@ -834,3 +834,203 @@ func main(){
 }
 ```
 
+## Atomic Counters
+
+```go
+package main
+import "fmt"
+import "time"
+import "sync/atomic"
+
+func main(){
+  var ops unit64=0
+  for i:=0;i<50;i++{
+    go func(){
+      for{
+        atomic.AddUnit64(&ops,1)
+        time.Sleep(time.Millisecond)
+      }
+    }()
+  }
+  time.Sleep(time.Second)
+  opsFinal:=atomic.LoadUnit64(&ops)
+  fmt.Println("ops:",opsFinal)
+}
+```
+
+## Mutexes
+
+```go
+package main
+import(
+  "fmt"
+  "math/rand"
+  "sync"
+  "sync/atomic"
+  "time"
+)
+func main(){
+  var state=make(map[int]int)
+  var mutex=&sync.Mutex{}
+  var readOps unit64=0
+  var writeOps unit64=0
+  for r:=0;r<100;r++{
+    go func(){
+      total:=0
+      for{
+        key:=rand.Intn(5)
+        mutex.Lock()
+        total+=state[key]
+        mutex.Unlock()
+        atomic.AddUnit64(&readOps,1)
+        time.Sleep(time.Millisecond)
+      }
+    }()
+  }
+  for w:=0;w<10;w++{
+    go func(){
+      for{
+        key:=rand.Intn(5)
+        val:=rand.Intn(100)
+        mutex.Lock()
+        state[key]=val
+        mutex.Unlock()
+        atomic.AddUnit64(&writeOps,1)
+        time.Sleep(time.Millisecond)
+      }
+    }()
+  }
+  time.Sleep(time.Second)
+  readOpsFinal:=atomic.LoadUnit64(&readOps)
+  fmt.Println("readOps:",readOpsFinal)
+  writeOpsFinal:=atomic.LoadUnit64(&writeOps)
+  fmt.Println("writeOps:",writeOpsFinal)
+  mutex.Lock()
+  fmt.Println("state:",state)
+  mutex.Unlock()
+}
+```
+
+## Stateful Goroutines
+
+```go
+package main
+import(
+  "fmt"
+  "math/rand"
+  "sync/atomic"
+  "time"
+)
+type readOp struct{
+  key int
+  resp chan int
+}
+type writeOp struct{
+  key int
+  val int
+  resp chan bool
+}
+func main() {
+  var readOp unit64=0
+  var writeOps unit64=0
+  reads:=make(chan *readOp)
+  writes:=make(chan *writeOp)
+  go func(){
+    var state=make(map[int]int)
+    for{
+      select{
+      case read:=<-reads:
+        read.resp<-state[read.key]
+      case write:=<-writes:
+        state[write.key]=write.val
+        write.resp<-true
+      }
+    }
+  }()
+  for r:=0;r<100;r++{
+    go func(){
+      for {
+        read:=&readOp{
+          key:rand.Intn(5),
+          resp:make(chan int)
+        }
+        reads<-read
+        <-read.resp
+        atomic.AddUnit64(&readOps,1)
+        time.Sleep(time.Millisecond)
+      }
+    }()
+  }
+  for w:=0;w<10;w++{
+    go func(){
+      for {
+        write:=&writeOp{
+          key:rand.Intn(5),
+          val:rand.Intn(100),
+          resp:make(chan bool)
+        }
+      }
+    }()
+  }
+  time.Sleep(time.Second)
+  readOpsFinal:=atomic.LoadUnit64(&readOps)
+  fmt.Println("readOps:",readOpsFinal)
+  writeOpsFinal:=atomic.LoadUnit64(&writeOps)
+  fmt.Println("writeOps:",writeOpsFinal)
+}
+```
+
+## Sorting
+
+```go
+package main
+import "fmt"
+import "sort"
+func main(){
+  strs:=[]string{"c","a","b"}
+  sort.Strings(strs)
+  fmt.Println("Strings:",strs)
+  ints:=[]int{7,2,4}
+  sort.Ints(ints)
+  fmt.Println("Ints:",ints)
+  s:=sort.IntsAreSorted(ints)
+  fmt.Println("Sorted:",s)
+}
+```
+
+## Sorting by Functions
+
+```go
+package main
+import "fmt"
+import "sort"
+type ByLength []string
+func (s ByLength) Len() int{
+  return len(s)
+}
+func (s ByLength) Swap(i,j int){
+  s[i],s[j] = s[j],s[i]
+}
+func (s ByLength) Less(i,j int) bool {
+  return len(s[i])<len(s[j])
+}
+func main(){
+  fruits:=[]string{"peach","banana","kiwi"}
+  sort.Sort(ByLength(fruits))
+  fmt.Println(fruits)
+}
+```
+
+## Panic
+
+```go
+package main
+import "os"
+func main(){
+  panic("a problem")
+  _,err:=os.Create("/tmp/file")
+  if err!=nil{
+    panic(err)
+  }
+}
+```
