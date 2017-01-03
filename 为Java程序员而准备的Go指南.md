@@ -43,7 +43,7 @@ func (s *Stack) Size() int {
 - 代码段`(s *Stack)`声明了一个方法调用者`s`，类似于Java中的`this`
 - 操作符`:=`同时声明并初始化变量，类型通过初始化表达式的值进行推断
 
-如下是一个Hello World程序，展示如何使用`cllection.Stack`这个抽象数据类型。
+如下是一个Hello World程序，展示如何使用`collection.Stack`这个抽象数据类型。
 
 ```go
 package collection_test
