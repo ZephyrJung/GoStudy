@@ -1277,3 +1277,459 @@ func main(){
   enc.Encode(d)
 }
 ```
+
+## Time
+
+```go
+package main
+import "fmt"
+import "time"
+func main(){
+  p:=fmt.Pritnln
+  now:=time.Now()
+  p(now)
+  then:=time.Date(2009,11,17,20,34,58,651387237,time.UTC)
+  p(then)
+  p(then.Year())
+  p(then.Month())
+  p(then.Day())
+  p(then.Hour())
+  p(then.Minute())
+  p(then.Second())
+  p(then.Nanosecond())
+  p(then.Location())
+  p(then.Weekday())
+  p(then.Before(now))
+  p(then.After(now))
+  p(then.Equal(now))
+  diff:=now.Sub(then)
+  p(diff)
+  p(diff.Hours())
+  p(diff.Minutes())
+  p(diff.Seconds())
+  p(diff.Nanoseconds())
+  p(then.Add(diff))
+  p(then.Add(-diff))
+}
+```
+
+## Epoch
+
+```go
+package main
+import "fmt"
+import "time"
+func main(){
+  now:=time.Now()
+  secs:=now.Unix()
+  nanos:=now.UnixNano()
+  fmt.Println(now)
+  millis:=nanos/1000000
+  fmt.Println(secs)
+  fmt.Println(millis)
+  fmt.Println(nanos)
+  fmt.Println(time.Unix(secs,0))
+  fmt.Println(time.Unix(0,nanos))
+}
+```
+
+## Time Formatting / Parsing
+
+```go
+package main
+import "fmt"
+import "time"
+func main(){
+  p:=fmt.Println
+  t:=time.Now()
+  p(t.Format(time.RFC3339))
+  t1,e:=time.Parse(
+    time.RFC3339,
+    "2012-11-01T22:08:41+00:00"
+  )
+  p(t1)
+  p(t.Format("3:04PM"))
+  p(t.Format("Mon Jan _2 15:04:05 2006"))
+  p(t.Format("2006-01-02T15:04:05.999999-07:00"))
+  form:="3 04 PM"
+  t2,e:=time.Parse(form,"8 41 PM")
+  p(t2)
+  fmt.Printf("%d-%02d-%02dT%02d:%02d:%02d-00:00\n",
+    t.Year(),t.Month(),t.Day(),
+    t.Hour(),t.Minute(),t.Second()
+  )
+  ansic:="Mon Jan _2 15:04:05 2006"
+  _,e=time.Parse(ansic,"8:41PM")
+  p(e)
+}
+
+## Random Numbers
+
+​```go
+package main
+import "time"
+import "fmt"
+import "math/rand"
+func main(){
+  fmt.Print(rand.Intn(100),",")
+  fmt.Print(rand.Intn(100))
+  fmt.Println()
+  fmt.Println(rand.Float64())
+  fmt.Print((rand.Float64()*5)+5,",")
+  fmt.Print((rand.Float64()*5)+5)
+  fmt.Println()
+  s1:=rand.NewSource(time.Now().UnixNano())
+  r1:=rand.New(s1)
+  fmt.Print(r1.Intn(100),",")
+  fmt.Print(r1.Intn(100))
+  fmt.Println()
+  s2:=rand.NewSrouce(42)
+  r2:=rand.New(s2)
+  fmt.Print(r2.Intn(100),",")
+  fmt.Print(r2.Intn(100))
+  fmt.Println()
+  s3:=rand.NewSource(42)
+  r3:=rand.New(s3)
+  fmt.Print(r3.Intn(100),",")
+  fmt.Print(r3.Intn(100))
+}
+
+## Number Parsing
+
+​```go
+package main
+import "strconv"
+import "fmt"
+func main(){
+  f,_:=strconv.ParseFloat("1.234",64)
+  fmt.Println(f)
+  i,_:=strconv.ParseInt("123",0,64)
+  fmt.Println(i)
+  d,_:=strconv,Parseint("0x1c8",0,64)
+  fmt.Println(d)
+  u,_:=strconv.ParseUint("789",0,64)
+  fmt.Println(u)
+  k,_:=strconv.Atoi("135")
+  fmt.Println(k)
+  _,e:=strconv.Atoi("wat")
+  fmt.Println(e)
+}
+```
+
+## URL Parsing
+
+```go
+package main
+import "fmt"
+import "net"
+import "net/url"
+func main(){
+  s:="postgres://user:pass@host.com:5432/path?k=v#f"
+  u,err:=url.Parse(s)
+  if err!=nil{
+    panic(err)
+  }
+  fmt.Println(u.Scheme)
+  fmt.Println(u.User)
+  fmt.Println(u.User.Username())
+  p,_:=u.User.Password()
+  fmt.Println(p)
+  fmt.Println(u.Host)
+  host,port,_:=net.SplitHostPort(u.Host)
+  fmt.Println(host)
+  fmt.Println(port)
+  fmt.Println(u.Path)
+  fmt.Println(u.Fragment)
+  fmt.Println(u.RawQuery)
+  m,_:=url.ParseQuery(u.RawQuery)
+  fmt.Println(m)
+  fmt.Println(m["k"][0])
+}
+```
+
+## SHA1 Hashes
+
+```go
+package main
+import "crypto/sha1"
+import "fmt"
+func main(){
+  s:="sha1 this string"
+  h:=sha1.New()
+  h.Write([]byte(s))
+  bs:=h.Sum(nil)
+  fmt.Println(s)
+  fmt.Printf("%x\n",bs)
+}
+```
+
+## Base64 Encoding
+
+```go
+package main
+import b64 "encoding/base64"
+import "fmt"
+func main(){
+  data:="abc123!?$*&()'-=@~"
+  sEnc:=b64.StdEncoding.EncodeToString([]byte(data))
+  fmt.Println(sEnc)
+  sDec,_:=b64.StdEncoding.DecodeString(sEnc)
+  fmt.Println(string(sDec))
+  fmt.Println()
+  uEnc:=b64.URLEncoding.EncodeToString([]byte(data))
+  fmt.Println(uEnc)
+  uDec,_:=b64.URLEncoding.DecodeString(uEnc)
+  fmt.Println(string(uDec))
+}
+```
+
+## Reading Files
+
+```go
+package main
+import(
+  "bufio"
+  "fmt"
+  "io"
+  "io/ioutil"
+  "os"
+)
+func check(e error){
+  if e!=nil{
+    panic(e)
+  }
+}
+func main(){
+  dat,err:=ioutil.ReadFile("/tmp/dat")
+  check(err)
+  fmt.Print(string(dat))
+  f,err:=os.Open("/tmp/dat")
+  check(err)
+  b1:=make([]byte,5)
+  n1,err:=f.Read(b1)
+  check(err)
+  fmt.Printf("%d bytes: %s\n",n1,string(b1))
+  o2,err:=f.Seek(6,0)
+  check(err)
+  b2:=make([]byte,2)
+  n2,err:=f.Read(b2)
+  check(err)
+  fmt.Printf("%d bytes @ %d: %s\n",n2,o2,string(b2))
+  o3,err:=f.Seek(6,0)
+  check(err)
+  b3:=make([]byte,2)
+  n3,err:=io.ReadAtLeast(f,b3,2)
+  check(err)
+  fmt.Printf("%d bytes @ %d: %s\n",n3,o3,string(b3))
+  _,err=f.Seek(0,0)
+  check(err)
+  r4:=bufio.NewReader(f)
+  b4,err:=r4.Peek(5)
+  check(err)
+  fmt.Printf("5 bytes: %s\n",string(b4))
+  f.Close()
+}
+```
+
+## Writing Files
+
+```go
+package main
+import(
+  "bufio"
+  "fmt"
+  "io/ioutil"
+  "os"
+)
+func check(e error){
+  if e!=nil{
+    panic(e)
+  }
+}
+func main(){
+  d1:=[]byte("hello\ngo\n")
+  err:=ioutil.WriteFile("/tmp/dat1",d1,0644)
+  check(err)
+  f,err:=os.Create("/tmp/dat2")
+  check(err)
+  defer f.Close()
+  d2:=[]byte{115,111,109,101,10}
+  n2,err:=f.Write(d2)
+  check(err)
+  fmt.Printf("wrote %d bytes\n",n2)
+  n3,err:=f.WriteString("writes\n")
+  fmt.Printf("wrote %d bytes\n",n3)
+  f.Sync()
+  w:=bufio.NewWriter(f)
+  n4,err:=w.WriteString("buffered\n")
+  fmt.Printf("wrote %d bytes\n",n4)
+  w.Flush()
+}
+```
+
+## Line Filters
+
+```go
+package main
+import (
+  "bufio"
+  "fmt"
+  "os"
+  "strings"
+)
+func main(){
+  scanner:=bufio.NewScanner(os.Stdin)
+  for scanner.Scan(){
+    ucl:=strings.ToUpper(scanner.Text())
+    fmt.Println(ucl)
+  }
+  if err:=scanner.Err();err!=nil{
+    fmt.Fprintln(os.Stderr,"error:",err)
+    os.Exit(1)
+  }
+}
+```
+
+## Command-Line Arguments
+
+```go
+package main
+import "os"
+import "fmt"
+func main(){
+  argsWithProg:=os.Args
+  argsWithoutProg:=os.Args[1:]
+  arg:=os.Args[3]
+  fmt.Println(argsWithProg)
+  fmt.Println(argsWithoutProg)
+  fmt.Println(arg)
+}
+```
+## Command-Line Flags
+
+```go
+package main
+import "flag"
+import "fmt"
+func main(){
+  wordPtr:=flag.String("word","foo","a string")
+  numbPtr:=flag.Int("numb",42,"an int")
+  boolPtr:=flag.Bool("fork",false,"a bool")
+  var svar string
+  flag.StringVar(&svar,"svar","bar","a string var")
+  flag.Parse()
+  fmt.Println("word:",*wordPtr)
+  fmt.Println("numb:",*numbPtr)
+  fmt.Println("fork:",*boolPtr)
+  fmt.Println("svar:",svar)
+  fmt.Println("tail:",flag.Args())
+}
+```
+
+## Environment Variables
+
+```go
+package main
+import "os"
+import "strings"
+import "fmt"
+func main(){
+  os.Setenv("FOO","1")
+  fmt.Println("FOO:",os.Getenv("FOO"))
+  fmt.Println("BAR:",os.Getenv("BAR"))
+  fmt.Println()
+  for _,e:=range os.Environ(){
+    pair:=strings.Split(e,"=")
+    fmt.Prinln(pair[0])
+  }
+}
+```
+
+## Spawning Processes
+package main
+import "fmt"
+import "io/iouitl"
+import "os/exec"
+func main(){
+  dateCmd:=exec.Command("date")
+  dateOut,err:=dateCmd.Output()
+  if err!=nil{
+    panic(err)
+  }
+  fmt.Println("> date")
+  fmt.Println(string(dateOut))
+  grepCmd:=exec.Command("grep","hello")
+  grepIn,_:=grepCmd.StdinPipe()
+  grepOut,_:=grepCmd.StdoutPipe()
+  grepCmd.Start()
+  grepIn.Write([]byte("hello grep\ngoodbye grep"))
+  grepIn.Close()
+  grepByte,_:=ioutil.ReadAll(grepOut)
+  grepCmd.Wait()
+  fmt.Println("> grep hello")
+  fmt.Println(string(grepBytes))
+  lsCmd:=exec.Command("bash","-c","ls -a -l -h")
+  lsOut,err:=lsCmd.Output()
+  if err!=nil{
+    panic(err)
+  }
+  fmt.Println("> ls -a -l -h")
+  fmt.Pritnln(string(lsOut))
+}
+
+## Exec'ing Processes
+
+```go
+package main
+import "syscall"
+import "os"
+import "os/exec"
+func main(){
+  binary,lookErr:=exec.LookPath("ls")
+  if lookErr!=nil{
+    panic(lookErr)
+  }
+  args:=[]string{"ls","-a","-l","-h"}
+  env:=os.Environ()
+  execErr:=syscall.Exec(binary,args,env)
+  if execErr!=nil{
+    panic(execErr)
+  }
+}
+```
+
+## Signals
+
+```go
+package main
+import "fmt"
+import "os"
+import "os/signal"
+import "syscall"
+func main(){
+  sigs:=make(chan os.Signal,1)
+  done:=make(chan bool,1)
+  signal.Notify(sigs,syscall.SIGINT,syscall.SIGTERM)
+  go func(){
+    sig:=<-sigs
+    fmt.Println()
+    fmt.Println(sig)
+    done<-true
+  }()
+  fmt.Println("awaiting signal")
+  <-done
+  fmt.Println("exiting")
+}
+```
+
+## Exit
+
+```go
+package main
+import "fmt"
+import "os"
+func main(){
+  defer fmt.Println("!")
+  os.Exit(3)
+}
+```
