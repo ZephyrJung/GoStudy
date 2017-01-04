@@ -4,7 +4,7 @@
 
 这篇文章是为了帮助Java程序员们迅速的掌握Go语言。
 
-本篇将先用Java程序员耳熟能详的特性举例，then gives a fairly detailed description of Go’s building blocks,and ends with an example illustrating constructsthat have no immediate counterpart in Java.
+本篇将先用Java程序员耳熟能详的特性举例，then gives a fairly detailed description of Go’s building blocks,and ends with an example illustrating constructs that have no immediate counterpart in Java.
 
 ## Hello Stack (example)
 
@@ -157,4 +157,125 @@ v1,v2=f()
 ```
 
 ### 空白标识
+
+空白标识（用下划线符号表示），提供了一个可以忽略多重返回值表达值的方法：
+
+```go
+v1,_=f() //忽略f()函数返回的第二个值
+```
+
+### 分号与格式
+
+与其担心分号与格式问题，不如使用`gofmt`程序来创建一个标准的Go风格。或许这个风格一开始看起来有点古怪，但它和其他的风格没有什么大的不同，并且随着熟悉而逐渐变得舒服。
+
+实践中Go代码几乎没有分号。技术上讲，所有的Go语句都是以分号为结尾的，只不过Go为每个非空白行的末尾隐式的添加了一个，除非语句明显没有结束。这导致了一个而结果就是在某些情况下Go不允许换行，如下代码是不允许的：
+
+```go
+func g()
+{
+  //非法; "{" 应该在上面那一行
+}
+```
+
+在`g()`后面会加分号，因为它是一个方法的声明而非定义。同理，也不能这样写：
+
+```go
+if n==0 {
+}
+else {	//错误；"else {"应该在上一行
+  ...
+}
+```
+
+else上面的`}`会加上分号，导致语法错误。
+
+### 条件语句
+
+Go不在if语句的条件部分或者for语句的表达式部分，又或者switch的值部分加上括号，另一反面，它要求if或者for语句体必须用花括号。
+
+```go
+if a<b {f()}
+if(a<b){f()} //括号没有必要
+if(a<b) f() //错误
+for i=0;i<10;i++{}
+for(i=0;i<10;i++){} //错误
+```
+
+此外，`if`和`switch`可以接受一个可选的初始化语句，一般用于创建一个局部变量。
+
+```go
+if err:=file.Chmod(0664);err!=nil{
+  log.Print(err)
+  return err
+}
+```
+
+### For语句
+
+Go既没有`while`语句也没有`do-while`语句。`for`语句可以用单个条件，如此等价于`while`语句。如果缺省整个条件将产生一个无限循环。
+
+一个`for`语句可以包含一个`range`子句来遍历字符串、数组、切片、maps或者channels，而非写
+
+```go
+for i:=0;i<len(a);i++ {...}
+```
+
+想要循环`a`的所有元素，还可以这样写
+
+```go
+for i,v := range a {...}
+```
+
+这为`i`赋予索引值，`v`赋予连续的数组，切片或字符串元素。对于字符串而言，i代表一个位的索引，v代表Unicode的code point，类型为`rune`（`rune`是`int32`的别名）。maps的迭代器将产生key-value对，while channels produce only one iteration value.
+
+### Break和Continue
+
+如Java，Go也允许`break`和`continue`指定一个标记，但标记必须是指向一个`for`，`switch`或`select`语句。
+
+### Switch语句
+
+在`switch`语句中，`case`标记并不会默认的一落到底，不过你可以通过在case后面添加`fallthrough`语句来做到这点。
+
+```go
+switch n{
+case 0: //empty case body
+case 1:
+  f() //当n为0的时候，f并不会被调用
+}
+```
+
+不过`case`可以包含多个值
+
+```go
+switch n{
+case 0,1:
+  f() //当n为0或1的时候，f将会被调用
+}
+```
+
+case后面的值可以是任何支持相等比较操作的类型，比如字符串或指针。如果switch表达式后面忽略，则与表达式为`true`等价：
+
+```go
+switch {
+case n<0:
+  f1()
+case n==0:
+  f2()
+default:
+  f3()
+}
+```
+
+### ++和--语句
+
+`++`和`--`只可以用于后缀操作符，并且只可以用于语句而不能写在表达式里。例如，不可以写`n=i++`。
+
+### defer语句
+
+一个`defer`语句将激活一个方法，它的执行将被递延到包含该语句的方法返回的那一刻。被延迟执行的方法将在方法返回前执行，无论包含其的方法以什么路线到达返回语句。
+
+```go
+f,err:=os.Open("filename")
+defer f.Close() //当这个方法结束时f将执行close方法
+```
 
