@@ -416,3 +416,168 @@ Map以及Channel的值必须通过内置方法`make`来分配。例如，调用`
 m := make([]int,10,20) //与new([20]int)[:10]等价
 ```
 
+## method和interface
+
+### Method
+
+一个函数看起来和方法定义一样，除了它包含一个调用者。这个调用者类似于Java实例方法的this引用。
+
+```go
+type MyType struct {i int}
+func (p *MyType) Get() int {
+  return p.i
+}
+var pm=new(MyType)
+var n=pm.Get()
+```
+
+这里声明了一个与`MyType`关联的`Get`方法。名为`p`的调用者在方法的内部。
+
+函数定义在命名的类型上。如果你将值转换为了另一个类型，那它将有那个新类型的函数，而非原来类型的。
+
+你还可以为内置类型声明方法，只要为内置类型定义一个别名，这个类型将与原内置类型有所区别。
+
+```go
+//这个例子本人没有看懂……
+type MyInt int
+func (p MyInt) Get() int {
+  return int(p) //这个转换式有必要的
+}
+func f(i int){}
+var v MyInt
+v = v * v
+f(int(v))
+f(v)
+```
+
+### Interfaces
+
+Go接口与Java的接口类似，但是，任何类型只要提供了Go接口所定义的方法，就可以被认为是这个接口的实现，而无需严格的声明。
+
+如下这个接口
+
+```go
+type MyInterface interface {
+  Get() int
+  Set(i int)
+}
+```
+
+上面的`MyType`已经定义了`Get`方法，我们再加如下方法来满足这个接口
+
+```go
+func (p *MyType) Set(i int){
+  p.i=i
+}
+```
+
+这样，任何接受`MyInterface`参数的方法，都可以接受`*MyType`类型了。
+
+```go
+func GetAndSet(x MyInterfaces){}
+func f1(){
+  var p MyTYpe
+  GetAndSet(&p)
+}
+```
+
+用Java的术语来讲，为`*MyType`定义了`Set`和`Get`方法，使得`*MyType`自动实现了`MyInterface`接口。一个类型可以满足多个接口。这是 duck typing的一种形式.
+
+>当我看到一只鸟，像鸭子一样走路，像鸭子一样游泳，像鸭子一样嘎嘎叫，我称那个鸟为鸭子
+
+### 匿名域
+
+一个匿名域可以用来实现类似于Java中的子类的东西。
+
+```go
+type MySubType struct{
+  MyType
+  j int
+}
+func (p *MySubType) Get() int{
+  p.j++
+  return p.MyType.Get()
+}
+```
+
+这很有效的为`MyType`实现了一个子类`MySubType`
+
+```go
+func f2(){
+  var p MySubType
+  GetAndSet(&p)
+}
+```
+
+`Set`方法继承于`MyType`，因为与匿名域关联的函数将升级为封装类型的函数。此时，因为`MySubType`有一个`MyType`类型的匿名域，`MyType`的函数也成为了`MySubType`的函数，Get方法被重写，Set方法则被继承。
+
+这与Java中的子类不完全一样。当一个匿名域的函数被调用时，它的调用者是这个匿名域，而非包含它的struct。换句话说，在匿名域上的函数没有自动分配。如果你想实现Java那样的动态函数查找，用interface。
+
+```go
+func f3(){
+  var v MyInterface
+  v = new(MyType)
+  v.Get() //调用*MyType的Get函数
+  v = new(MySubType)
+  v.Get() //调用*MySubType的Get函数
+}
+```
+
+### 类型断言
+
+一个interface类型的变量可能使用类型断言转换为不同的interface类型。这是在运行期间动态实现的。不同于Java，两个interface之前并不需要声明任何关系。
+
+```go
+type Printer interface{
+  Print()
+}
+func f4(x MyInterface){
+  x.(Printer).Print()
+}
+```
+
+转换为`Printer`是完全动态的。只要动态类型x（存储在x中的实际类型）定义了`Print`函数，它便将工作。
+
+### 泛型
+
+Go没有泛型类型，但通过结合匿名域和类型断言，它可以近似达到Java的参数化类型。
+
+```go
+type StringStack struct{
+  Stack
+}
+func (s *StringStack) Push(n string){s.Stack.Push(n)}
+func (s *StringStack) Pop() string {return s.Stack.Pop().(string)}
+```
+
+`StringStack`个性化了[Hello stack]()例子使得它可以像只能用于`string`元素的`Stack`，正如Java中一样。注意`Size`方法继承于`Stack`。
+
+## 错误
+
+对于Java通常使用的异常，Go有两种不同的机制。大多数方法返回error，只有在不可挽回的情况下，比如索引越界，才会产生运行时异常。
+
+Go能返回多个值，使得它很容易的返回错误的详细信息以及返回值。作为约定，这个信息的类型为`error`，一个简单的内置interface。
+
+```go
+type error interface{
+  Error() string
+}
+```
+
+比如，`os.Open`方法在打开文件失败时会返回一个non-nil`error`
+
+```go
+func Open(name string)(file *File,err error)
+```
+
+下面的代码使用`os.Open`打开文件。如果`error`发生，则调用`log.Fatal`来打印错误信息，并停止。
+
+```go
+f, err := os.Open("filename.ext")
+if err != nil{
+  log.Fatal(err)
+}
+// do something with the open *File f
+```
+
+`error`接口仅需要一个`Error`方法，然而具体的`error`实现经常包含很多其他的函数，来使得调用者可以深入调查错误的细节。
