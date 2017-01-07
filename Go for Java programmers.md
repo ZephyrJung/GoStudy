@@ -895,4 +895,4 @@ func main() {
 Concurrent programming is a large topic andGo’s approach is quite different from Java’s.Here are two texts that cover the basics.
 
 - [Fundamentals of concurrent programming](https://www.nada.kth.se/%7Esnilsson/concurrency/)is a gentle introduction to concurrency with small examples in Go.
-- [Share Memory by Communicating](http://golang.org/doc/codewalk/sharemem/)is a codewalk with a more substantial example.
+- [Share Memory by Communicating](http://golang.org/doc/codewalk/sharemem/)is a codewalk with a more  example.

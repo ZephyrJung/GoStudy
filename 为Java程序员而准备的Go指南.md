@@ -4,7 +4,7 @@
 
 这篇文章是为了帮助Java程序员们迅速的掌握Go语言。
 
-本篇将先用Java程序员耳熟能详的特性举例，then gives a fairly detailed description of Go’s building blocks,and ends with an example illustrating constructs that have no immediate counterpart in Java.
+本篇将先用Java程序员耳熟能详的特性举例，然后通过Go片段给出一些相对细节的描述，最后给出一个没有直接Java代码对应的说明例子。
 
 ## Hello Stack (example)
 
@@ -581,3 +581,197 @@ if err != nil{
 ```
 
 `error`接口仅需要一个`Error`方法，然而具体的`error`实现经常包含很多其他的函数，来使得调用者可以深入调查错误的细节。
+
+## Panic和recover
+
+panic是运行时错误，它将释放goroutine栈，并运行所有等待的延迟方法，然后停止程序。panic与Java的异常蕾丝，但只针对运行时错误，例如空指针或数组越界。如上文所示，为了表示文件末尾，Go使用内置的`error`类型。
+
+内置的`recover`方法可以用来重新获得一个有问题的goroutine的控制权，并恢复正常的执行。调用`recover`方法停止释放并返回传递给`panic`的参数。由于释放的代码位于延迟方法中，`recover`只在延迟方法内部有用。如果goroutine没有发生问题，`recover`返回`nil`。
+
+## Goroutine和channels
+
+### Goroutines
+
+Go可以使用go语句启动一个新的执行线程，goroutine，它运行在方法内部，以一个不同的，全新创建的goroutine。一个程序中的所有goroutine共享同一个地址空间。
+
+goroutine是轻量级的，消耗比分配大不了多少的栈空间。这块栈在需要时分配和释放堆容量。本质上，goroutine和corotine的行为类似，在多线程操作系统中多路复用。你无需担心这些细节。
+
+```go
+go list.Sort() //平行执行list.Sort()方法，不用等它
+```
+
+Go有方法字面量，可以表现的像闭包一样，在处理`go`语句的时候会很有用。
+
+```go
+//经过指定时间后提交打印的文字到标准输出
+func Publish(text string,delay time.Duration){
+  go func(){
+    time.Sleep(delay)
+    fmt.Println(text)
+  }() //注意括号，我们必须调用这个方法
+}
+```
+
+变量`text`和`delay`与所在方法和方法字面量所共享，只要他们能被访问到，就会存活。
+
+### Channels
+
+channel通过传递一个特定元素类型的值为两个gorotine之间提供了一个同步执行和通信的机制。`<-`操作符说明了channel的方向，发送或者接收。如果没有指明方向，则是双向通信。
+
+```go
+chan Sushi //可以用来发送和接收Sushi类型的值
+chan<- float64 //只能用来发出float64类型的值
+<-chan int //只能用来接收ints的值
+```
+
+channel是引用类型，通过make来分配
+
+```go
+ic := make(chan int) //无缓存的int类型channel
+wc := make(chan *Work, 10) //有缓存的Work指针channel
+```
+
+像一个信道上发送值，可以使用`<-`作为二元操作符。为了接收信道上的值，用它作为一元操作符。
+
+```go
+ic <- 3 //发送3到信道上
+work := <-wc //从信道上接收一个Work指针
+```
+
+如果channel是无缓冲的，发送者将在接收者收到值前阻塞。如果有缓冲，则只有在放进缓冲之前会阻塞。当缓冲满时，将等待接收者读取一个值。接收者在有值读取之前会阻塞。
+
+`close`方法记录在信道上没有信息。当调用了`close`，并且在上一次发送数据被接收到后，接收操作将返回一个零值而不阻塞。多返回值的接收方法会额外返回一个表明信道是否关闭的标识。
+
+```go
+ch := make(chan string)
+go func(){
+  ch <- "Hello!"
+  close(ch)
+}()
+fmt.Println(<-ch) //打印Hello!
+fmt.Println(<-ch) //无阻塞打印零值
+fmt.Println(<-ch) //再次打印零值
+v,ok:=<-ch //v是零值""，ok值为false
+```
+
+下一个例子中我们让`Publish`方法返回一个channel，用来广播被打印文字的信息。
+
+```go
+//Publish在给定时间后打印文本到标准输出
+//当文本被提交后关闭等待的信道
+func Publish(text string,delay time.Duration)(wait <-chan struct{}){
+  ch := make(chan struct{})
+  go func(){
+    time.Sleep(delay)
+    fmt.Println(text)
+    close(ch)
+  }()
+  return ch
+}
+```
+
+这是你对`Publish`可能的用法。
+
+```go
+wait:=Publish("important news",2*time.Minute)
+//Do some more work
+<-wait //当文本提交前阻塞
+```
+
+### select语句
+
+select语句是Go并发工具集中最后的工具。它选择可能发生通信的集合。如果有哪些通讯可可以继续，其中一个将被选中，相应的语句得以执行。否则，如果没有默认情况，语句将阻塞，知道其中一个通讯可以完成。
+
+下面是一个玩具示例来展现select语句是如何用来实现一个随机数产生器。
+
+```go
+rand := make(chan int)
+for {
+  select { //向rand发送随机序列位
+  case rand <-0: //注：无语句
+  case rand <-1:
+  }
+}
+```
+
+稍实际一点，下面是一个select语句，可以用来向接收操作设置一个时间限制
+
+```go
+select {
+case news := <-AFP:
+  fmt.Println(news)
+case <-time.After(time.Minute):
+  fmt.Println("Time out: no news in one minute.")
+}
+```
+
+`time.After`方法是标准库中的一部分；它等待经过指定的时间并且发送当前的时间到返回的信道上。
+
+## 并发示例
+
+我们用一个小而完整的例子来展示这些片段如何糅合在一起。这段草稿代码从信道上接收`Work`的请求。每个请求服务在不同的goroutine上。`Work`自身包含一个可以用来返回结果的信道。
+
+```go
+//server.go
+package server
+import "log"
+func New()(req chan<- *Work){
+  wc:=make(chan *Work)
+  go serve(wc)
+  return wc
+}
+type Work struct{
+  Op func(int,int) int
+  A,B int
+  Reply chan int
+}
+func serve(wc <-chan *Work){
+  for w:=range wc{
+    go safelyDo(w)
+  }
+}
+func safelyDo(w *Work){
+  defer func(){
+    if err:=recover();err!=nil{
+      log.Println("work failed: ",err)
+    }
+  }()
+  do(w)
+}
+func do(w *Work){
+  w.Reply <- w.Op(w.A,w.B)
+}
+```
+
+下面是使用这个的例子
+
+```go
+//example_test.go
+package server_test
+import (
+  server "."
+  "fmt"
+  "time"
+)
+func main(){
+  s:=server.New()
+  divedByZero:=&server.Work{
+    Op:func(a,b int) int {return a/b},
+    A:100,
+    B:0,
+    Reply:make(chan int)
+  }
+  s<-divideByZero
+  select{
+  case res:=<-divideByZero.Reply:
+    fmt.Println(res)
+  case <-time.After(time.Second):
+    fmt.Println("No result in one second.")
+  }
+}
+```
+
+并发编程是一个庞大的主题，而且Go的方式与Java有相当的区别。这里有两个文章涵盖了基础知识。
+
+- [Fundamentals of concurrent programming](https://www.nada.kth.se/%7Esnilsson/concurrency/) 是一个对并发短小精悍的介绍，包含了一些Go的例子。
+- [Share Memory by Communicating](http://golang.org/doc/codewalk/sharemem/) 是一个有大量示例的代码走廊。
