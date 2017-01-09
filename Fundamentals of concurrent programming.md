@@ -2,7 +2,7 @@
 
   [    ![bouncing balls](https://www.nada.kth.se/%7Esnilsson/concurrency/bouncing-balls.jpg)  ](http://www.flickr.com/photos/un_photo/5853737946/)
 
-This is an introduction to concurrent programming with examplesin [Go](http://golang.org). The text covers
+This is an introduction to concurrent programming with examples in [Go](http://golang.org). The text covers
 
 - concurrent threads of execution (goroutines),
 - basic synchronization techniques (channels and locks),
@@ -10,15 +10,15 @@ This is an introduction to concurrent programming with examplesin [Go](http://g
 - deadlock and data races,
 - parallel computation.
 
-Before you start, you need to know how to write basic Go programs.If you are already familiar with a language such as C/C++, Java, or Python,[A Tour of Go](http://tour.golang.org/) will give you allthe background you need.You may also want to take a look at either[Go for C++ programmers](http://code.google.com/p/go-wiki/wiki/GoForCPPProgrammers) or[Go for Java programmers](http://www.nada.kth.se/%7Esnilsson/go_for_java_programmers/).
+Before you start, you need to know how to write basic Go programs.If you are already familiar with a language such as C/C++, Java, or Python,[A Tour of Go](http://tour.golang.org/) will give you all the background you need.You may also want to take a look at either [Go for C++ programmers](http://code.google.com/p/go-wiki/wiki/GoForCPPProgrammers) or [Go for Java programmers](http://www.nada.kth.se/%7Esnilsson/go_for_java_programmers/).
 
 ## 1. Threads of execution
 
 Go permits starting a new thread of execution,a [goroutine](http://golang.org/ref/spec#Go_statements),using the `go` statement.It runs a function in a different, newly created, goroutine.All goroutines in a single program share the same address space.
 
-Goroutines are lightweight,costing little more than the allocation of stack space.The stacks start small and grow by allocating and freeingheap storage as required.Internally goroutines are multiplexed onto multiple operating system threads.If one goroutine blocks an OS thread, for example waiting for input,other goroutines in this thread will migrate so that they maycontinue running.You do not have to worry about these details.
+Goroutines are lightweight,costing little more than the allocation of stack space.The stacks start small and grow by allocating and freeing heap storage as required. Internally goroutines are multiplexed onto multiple operating system threads.If one goroutine blocks an OS thread, for example waiting for input,other goroutines in this thread will migrate so that they may continue running.You do not have to worry about these details.
 
-The following program will print `"Hello from main goroutine"`.It *might* print `"Hello from another goroutine"`,depending on which of the two goroutines finish first.
+The following program will print `"Hello from main goroutine"`. It *might* print `"Hello from another goroutine"`, depending on which of the two goroutines finish first.
 
 ```
 func main() {
@@ -33,7 +33,7 @@ func main() {
 
 [goroutine1.go](https://www.nada.kth.se/%7Esnilsson/concurrency/src/goroutine1.go)
 
-The next program will, most likely,print both `"Hello from main goroutine"`and `"Hello from another goroutine"`.They might be printed in any order.Yet another possibility is that thesecond goroutine is extremely slow and doesn’t printits message before the program ends.
+The next program will, most likely,print both `"Hello from main goroutine"`and `"Hello from another goroutine"`. They might be printed in any order. Yet another possibility is that thesecond goroutine is extremely slow and doesn’t printits message before the program ends.
 
 ```
 func main() {
@@ -90,13 +90,13 @@ Ten seconds later: I’m leaving now.
 
 ```
 
-In general it’s not possible to arrange for threads to wait for eachother by sleeping. In the next section we’ll introduce one of Go’smechanisms for synchronization, *channels*, and thenwe’ll demonstrate how to use a channel to make one goroutine wait for another.
+In general it’s not possible to arrange for threads to wait for each other by sleeping. In the next section we’ll introduce one of Go’s mechanisms for synchronization, *channels*, and thenwe’ll demonstrate how to use a channel to make one goroutine wait for another.
 
 ## 2. Channels
 
   [    ![Sushi conveyor belt](https://www.nada.kth.se/%7Esnilsson/concurrency/sushi-conveyor-belt.jpg)  ](http://www.flickr.com/photos/erikjaeger/35008017/)      Sushi conveyor belt  
 
-A [channel](http://golang.org/ref/spec#Channel_types)is a Go language construct that provides a mechanismfor two goroutines to synchronize execution and communicate bypassing a value of a specified element type.The `<-` operator specifies the channel direction,send or receive. If no direction is given, the channel is bi-directional.
+A [channel](http://golang.org/ref/spec#Channel_types) is a Go language construct that provides a mechanismfor two goroutines to synchronize execution and communicate bypassing a value of a specified element type.The `<-` operator specifies the channel direction,send or receive. If no direction is given, the channel is bi-directional.
 
 ```
 chan Sushi      // can be used to send and receive values of type Sushi
@@ -113,7 +113,7 @@ wc := make(chan *Work, 10)  // buffered channel of pointers to Work
 
 ```
 
-To send a value on a channel,use `<-` as a binary operator.To receive a value on a channel, use it as a unary operator.
+To send a value on a channel,use `<-` as a binary operator. To receive a value on a channel, use it as a unary operator.
 
 ```
 ic <- 3       // Send 3 on the channel.
@@ -121,11 +121,11 @@ work := <-wc  // Receive a pointer to Work from the channel.
 
 ```
 
-If the channel is unbuffered,the sender blocks until the receiver has received the value.If the channel has a buffer,the sender blocks only until the value has been copied to the buffer;if the buffer is full,this means waiting until some receiver has retrieved a value.Receivers block until there is data to receive.
+If the channel is unbuffered, the sender blocks until the receiver has received the value. If the channel has a buffer, the sender blocks only until the value has been copied to the buffer; if the buffer is full, this means waiting until some receiver has retrieved a value. Receivers block until there is data to receive.
 
 ### Close
 
-The [`close`](http://golang.org/ref/spec#Close)function records that no more valueswill be sent on a channel. After calling `close`,and after any previously sent values have been received,receive operations will return a zero value without blocking.A multi-valued receive operation additionally returns a booleanindicating whether the value was delivered by a send operation.
+The [`close`](http://golang.org/ref/spec#Close)function records that no more values will be sent on a channel. After calling `close`,and after any previously sent values have been received,receive operations will return a zero value without blocking.A multi-valued receive operation additionally returns a boolean indicating whether the value was delivered by a send operation.
 
 ```
 ch := make(chan string)
@@ -140,7 +140,7 @@ v, ok := <-ch      // v is "", ok is false
 
 ```
 
-A `for` statement with a `range` clausereads successive values sent on a channel until the channel is closed.
+A `for` statement with a `range` clause reads successive values sent on a channel until the channel is closed.
 
 ```
 func main() {
@@ -166,7 +166,7 @@ func Producer() <-chan Sushi {
 
 ## 3. Synchronization
 
-In the next example we let the `Publish`function return a channel, which is used to broadcast a message whenthe text has been published.
+In the next example we let the `Publish` function return a channel, which is used to broadcast a message when the text has been published.
 
 ```
 // Publish prints text to stdout after the given time has expired.
@@ -230,7 +230,7 @@ func Publish(text string, delay time.Duration) (wait <-chan struct{}) {
 
 ```
 
-The main program starts like before: it prints the first line and thenwaits for five seconds. At this point the goroutine started by the`Publish` function will print the breaking news and then exitleaving the main goroutine waiting.
+The main program starts like before: it prints the first line and then waits for five seconds. At this point the goroutine started by the`Publish` function will print the breaking news and then exit leaving the main goroutine waiting.
 
 ```
 func main() {
@@ -267,7 +267,7 @@ created by addtimer
 
 ```
 
-In most cases it’s easy to figure out what caused a deadlockin a Go program and then it’s just a matter of fixing the bug.
+In most cases it’s easy to figure out what caused a deadlock in a Go program and then it’s just a matter of fixing the bug.
 
 ## 5. Data races
 
@@ -275,7 +275,7 @@ A deadlock may sound bad, but the truly disastrous errors thatcome with concurre
 
 > A *data race* occurs when two threads access the samevariable concurrently and at least one of the accesses is a write.
 
-This function has a data race and it’s behavior is undefined.It may, for example, print the number 1. Try to figure outhow that can happen – one possible explanation comes after the code.
+This function has a data race and it’s behavior is undefined.It may, for example, print the number 1. Try to figure out how that can happen – one possible explanation comes after the code.
 
 ```
 func race() {
@@ -304,7 +304,7 @@ The two goroutines, `g1` and `g2`,participate in a race and there is no way to k
 - `g2` writes `1` to `n`.
 - The programs prints the value of n, which is now `1`.
 
-The name ”data race” is somewhat misleading.Not only is the ordering of operations undefined;there are *no guarantees whatsoever*. Both compilersand hardware frequently turn code upside-down and inside-outto achieve better performance. If you look at a thread in mid-action,you might see pretty much anything:
+The name ”data race” is somewhat misleading.Not only is the ordering of operations undefined;there are *no guarantees whatsoever*. Both compilers and hardware frequently turn code upside-down and inside-outto achieve better performance. If you look at a thread in mid-action,you might see pretty much anything:
 
   [    ![mid action](https://www.nada.kth.se/%7Esnilsson/concurrency/mid-action.jpg)  ](http://www.flickr.com/photos/brandoncwarren/2953838847/)
 
@@ -324,7 +324,6 @@ func sharingIsCaring() {
     n++
     fmt.Println(n) // Output: 2
 }
-
 ```
 
 [datarace.go](https://www.nada.kth.se/%7Esnilsson/concurrency/src/datarace.go)
@@ -337,11 +336,11 @@ In this code the channel does double duty. It passes the datafrom one goroutine 
 
   [    ![lock](https://www.nada.kth.se/%7Esnilsson/concurrency/lock.jpg)  ](http://www.flickr.com/photos/dzarro72/7187334179/)
 
-Sometimes it’s more convenient to synchronize data accessby explicit locking instead of using channels.The Go standard library offers a mutual exclusion lock,[sync.Mutex](http://golang.org/pkg/sync/#Mutex),for this purpose.
+Sometimes it’s more convenient to synchronize data access by explicit locking instead of using channels.The Go standard library offers a mutual exclusion lock,[sync.Mutex](http://golang.org/pkg/sync/#Mutex),for this purpose.
 
-For this type of locking to work, it’s crucial that all accessesto the shared data, both reads and writes, are performed onlywhen a goroutine holds the lock. One mistake by a single goroutineis enough to break the program and introduce a data race.
+For this type of locking to work, it’s crucial that all accesses to the shared data, both reads and writes, are performed only when a goroutine holds the lock. One mistake by a single goroutine is enough to break the program and introduce a data race.
 
-Because of this you should consider designing a custom data structurewith a clean API and make sure that all the synchronizationis done internally. In this example we build a safe and easy-to-useconcurrent data structure, `AtomicInt`, that stores a single integer.Any number of goroutines can safely access this number through the`Add` and `Value` methods.
+Because of this you should consider designing a custom data structurewith a clean API and make sure that all the synchronization is done internally. In this example we build a safe and easy-to-use concurrent data structure, `AtomicInt`, that stores a single integer.Any number of goroutines can safely access this number through the`Add` and `Value` methods.
 
 ```
 // AtomicInt is a concurrent data structure that holds an int.
@@ -404,7 +403,7 @@ func race() {
 
 [raceClosure.go](https://www.nada.kth.se/%7Esnilsson/concurrency/src/raceClosure.go)
 
-A plausible explanation for the `55555` outputis that the goroutine that executes `i++` managed todo this five times before any of the other goroutines executedtheir print statements.The fact that the updated value of `i` was visibleto the other goroutines is purely coincidental.
+A plausible explanation for the `55555` outputis that the goroutine that executes `i++` managed todo this five times before any of the other goroutines executed their print statements.The fact that the updated value of `i` was visibleto the other goroutines is purely coincidental.
 
 A simple solution is to use a local variable and pass the numberas a parameter when starting the goroutine.
 
@@ -426,7 +425,7 @@ func correct() {
 
 [raceClosure.go](https://www.nada.kth.se/%7Esnilsson/concurrency/src/raceClosure.go)
 
-This code is correct and the program prints an expected result,such as `24031`.Recall that the order of execution between goroutines is unspecifiedand may vary.
+This code is correct and the program prints an expected result,such as `24031`.Recall that the order of execution between goroutines is unspecified and may vary.
 
 It’s also possible to avoid this data race while still using a closure,but then we must take care to use a unique variable for each goroutine.
 
@@ -451,9 +450,9 @@ func alsoCorrect() {
 
 ### Automatic data race detection
 
-In general, it’s not possible to automatically detect all data races,but Go (starting with version 1.1) has a powerful[data race detector](http://tip.golang.org/doc/articles/race_detector.html).
+In general, it’s not possible to automatically detect all data races,but Go (starting with version 1.1) has a powerful [data race detector](http://tip.golang.org/doc/articles/race_detector.html).
 
-The tool is simple to use:just add the `-race` flag to the `go` command.Running the program above with the detector turned ongives the following clear and informative output.
+The tool is simple to use:just add the `-race` flag to the `go` command.Running the program above with the detector turned on gives the following clear and informative output.
 
 ```
 $ go run -race raceClosure.go 
@@ -491,13 +490,13 @@ exit status 66
 
 ```
 
-The tool found a data race consisting of a write toa variable on line 20 in one goroutine,followed by an unsynchronized read from the same variableon line 22 in another goroutine.
+The tool found a data race consisting of a write toa variable on line 20 in one goroutine,followed by an unsynchronized read from the same variable on line 22 in another goroutine.
 
-Note that the race detector only finds data races that actually happenduring execution.
+Note that the race detector only finds data races that actually happen during execution.
 
 ## 8. Select statement
 
-The [select statement](http://golang.org/ref/spec#Select_statements)is the final tool in Go’s concurrency toolkit.It chooses which of a set of possible communications will proceed.If any of the communications can proceed, one of them is randomlychosen and the corresponding statements are executed.Otherwise, if there is no default case,the statement blocks until one of the communications can complete.
+The [select statement](http://golang.org/ref/spec#Select_statements) is the final tool in Go’s concurrency toolkit.It chooses which of a set of possible communications will proceed.If any of the communications can proceed, one of them is randomly chosen and the corresponding statements are executed.Otherwise, if there is no default case,the statement blocks until one of the communications can complete.
 
 Here is a toy example showing how the select statement canbe used to implement a random number generator.
 
