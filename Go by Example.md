@@ -2,6 +2,8 @@
 
 ## Hello World
 
+我们第一个程序就是打印经典的“hello world”，下面是完整的代码
+
 ```go
 package main
 import "fmt"
@@ -9,6 +11,12 @@ func main(){
   fmt.Println("hello world")
 }
 ```
+
+要运行这个程序，将代码保存为hello-world.go，然后使用`go run`
+
+有时候我们想让程序编译成二进制文件，可以使用`go build`，然后就可以直接运行了。
+
+现在我们已经运行及编译了基本的Go程序，让我们了解更多关于这个语言的东西吧。
 
 ## Values
 
