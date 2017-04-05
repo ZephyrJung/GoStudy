@@ -110,7 +110,7 @@ func main(){
   //也可以使用continue来直接到下一个循环
   for n:=0;n<=5;n++ {
     if n%2 == 0{
-      continue;
+      continue
     }
     fmt.Println(n)
   }
@@ -311,7 +311,7 @@ func main(){
   fmt.Println("v1: ",v1)
   //len函数返回map中键值对的个数
   fmt.Println("len:",len(m))
-  内置的delete函数将移除map中的键值对
+  //内置的delete函数将移除map中的键值对
   delete(m,"k2")
   fmt.Println("map:",m)
   //第一个值是该key的value，但此处不需要，故使用空白占位符“_”忽略
