@@ -20,10 +20,13 @@ func main(){
 
 ## Values
 
+Go有多种值的类型，包括string，integer，float，boolean等。如下是几个基本例子。
+
 ```go
 package main
 import "fmt"
 func main(){
+  //string可以使用+连接在一起
   fmt.Println("go"+"lang")
   fmt.Println("1+1=",1+1)
   fmt.Pritnln("7.0/3.0=",7.0/3.0)
@@ -35,24 +38,32 @@ func main(){
 
 ## Variables
 
+在Go中，变量被编译器显式的声明和使用，例如检查函数调用类型的正确性。
+
 ```go
 package main
 import "fmt"
 func main(){
+  //声明一个或多个变量
   var a string="initial"
   fmt.Println(a)
   var b,c int = 1,2
   fmt.Println(b,c)
+  //Go将推断变量的初始化类型
   var d = true
   fmt.Println(d)
+  //声明没有初始值的变量将被初始化为零值，如int的零值是0
   var e int
   fmt.Println(e)
+  //var f string = "short"的简化写法
   f:="short"
   fmt.Println(f)
 }
 ```
 
 ## Constants
+
+Go支持的常量有字符、字符串、布尔值以及数值
 
 ```go
 package main
@@ -61,36 +72,54 @@ import "math"
 const s string = "constant"
 func main(){
   fmt.Println(s)
+  //const声明可以出现在任何var声明出现的地方
   const n = 50000000
+  //常量表达式可以任意精度进行运算
   const d = 3e20 / n
   fmt.Println(d)
+  //数值常量没有类型，除非进行了显式转换等类型赋予
   fmt.Prinln(int64(d))
+  //数值在使用环境上下文中会得到类型，如变量赋值或者方法调用，如math.Sin需要的是一个float64
   fmt.Println(math.Sin(n))
 }
 ```
 
 ## For
 
+for是Go中唯一的循环结构，下面是三种基本的for循环类型。
+
 ```go
 package main
 import "fmt"
 func main(){
   i := 1
+  //最基本的类型，只有一个条件
   for i<=3{
     fmt.Println(i)
     i = i+1
   }
+  //经典的 初始化/条件/循环后 for循环
   for j:=7;j<=9;j++{
     fmt.Println(j)
   }
+  //没有条件的for语句将无限循环，除非在内部的方法中使用了break或者return
   for{
     fmt.Println("loop")
     break
+  }
+  //也可以使用continue来直接到下一个循环
+  for n:=0;n<=5;n++ {
+    if n%2 == 0{
+      continue;
+    }
+    fmt.Println(n)
   }
 }
 ```
 
 ## If/Else
+
+Go中的if-else分支简单直接。
 
 ```go
 package main
@@ -101,9 +130,11 @@ func main(){
   }else{
     fmt.Println("7 is odd")
   }
+  //可以单独使用if
   if 8%4==0{
     fmt.Println("8 is divisible by 4")
   }
+  //条件之前可以有语句，声明在该语句中的任何变量可以用于所有分支
   if num:=9;num<0{
     fmt.Println(num,"is negative")
   }else if num<10{
@@ -113,6 +144,10 @@ func main(){
   }
 }
 ```
+
+注意，Go中条件周围不需要圆括号，但是花括号是必要的。
+
+Go中没有三目if语句，所以对于最基本的条件也需要写完整的if语句。
 
 ## Switch
 
@@ -128,36 +163,60 @@ func main(){
   case 2: fmt.Println("two")
   case 3: fmt.Println("three")
   }
+  //可以在同一个case语句中使用逗号来分隔多个表达式
   switch time.Now().weekday(){
   case time.Saturday,time.Sunday:
     fmt.Println("it's the weekend")
+  //这里也使用了default case
   default:
     fmt.Println("it's a weekday")
   }
   t:=time.Now()
+  //没有表达式的switch是另一种实现if/else逻辑的路子，同时这也展示了case表达式可以是非常量值。
   switch{
   case t.Hour()<12:
     fmt.Println("it's before noon")
   default:
     fmt.Println("it's after noon")
   }
+  //类型switch比较了类型而非值
+  whatAmI := func(i interface{}){
+    switch t:=i.(type){
+    case bool:
+      fmt.Println("I'm a bool")
+    case int:
+      fmt.Println("I'm an int")
+    default:
+      fmt.Println("Don't know type %T\n",t)
+    }
+  }
+  whatAmI(true)
+  whatAmI(1)
+  whatAmI("hey")
 }
 ```
 
 ## Arrays
 
+在Go中，数组是特定长度元素的编号序列。
+
 ```go
 package main
 import "fmt"
 func main(){
+  //这里创建了一个5个int元素的数组。默认是零值，对于int而言就是0
   var a [5]int
   fmt.Println("emp:",a)
+  //可以通过array[index]=value语法设值，或者通过array[index]取值
   a[4]=100
   fmt.Println("set:",a)
   fmt.Println("get:",a[4])
+  //内置的len函数返回数组的长度
   fmt.Println("len:",len(a))
+  //声明并初始化数组
   b:=[5]int{1,2,3,4,5}
   fmt.Prinln("dc1:",b)
+  //数组是一维的，但你可以组合类型来构建多维数组结构
   var twoD [2][3]int
   for i:=0;i<2;i++{
     for j:=0;j<3;j++{
@@ -168,34 +227,53 @@ func main(){
 }
 ```
 
+当使用fmt.Println方法打印时，数组将以[v1 v2 v3 ... ]的形式展现
+
+在典型的Go程序中，你将发现slice用的要比array更多，我们将在下一节看到它。
+
 ## Slices
+
+slice是一个重要的数据类型，对于序列提供了比数组更强大的接口
 
 ```go
 package main
 import "fmt"
 func main(){
+  //与数组不同，切片仅由其包含的元素（不是元素的数量）键入。 
+  //要创建一个非零长度的空切片，请使用内置的make。 这里我们制作长度为3的字符串（最初为零值）。
   s:=make([]string,3)
   fmt.Println("emp:",s)
+  //可以像数组一样set和get
   s[0]="a"
   s[1]="b"
   s[2]="c"
   fmt.Println("set:",s)
   fmt.Println("get:",s[2])
+  //len能够返回slice的长度
   fmt.Println("len:",len(s))
+  //作为这些基本操作的补充，slice支持一些令其比数组更丰富的东西。
+  //其中一个是append函数，其返回一个包含一个或多个新值的slice
+  //注意需要接受append的返回值来获取新的slice值
   s=append(s,"d")
   s=append(s,"e","f")
   fmt.Println("apd:",s)
+  //slice可以复制
   c:=make([]string,len(s))
   copy(c,s)
   fmt.Println("cpy:",c)
+  //slice支持切片操作，语法为slice[low:high]。如下将得到元素s[2],s[3]和s[4]
   l:=s[2:5]
   fmt.Println("sl1:",l)
+  //如下切片截止到（不包含）s[5]
   l=s[:5]
   fmt.Pritnln("sl2:",l)
+  //如下切片从s[2]开始（包含）
   l=s[2:]
   fmt.Println("sl3:",l)
+  //声明并初始化slice
   t:=[]string{"g","h","i"}
   fmt.Println("dcl:",t)
+  //slice也可以组织成一个多为数据结构，内部的slice长度可以变化，这与多维数组不同
   twoD:=make([][]int,3)
   for i:=0;i<3;i++{
     innerLen:=i+1
@@ -208,49 +286,77 @@ func main(){
 }
 ```
 
+虽然slice与array是不同的类型，但是使用fmt.Println的展示结果很相似
+
+可以通过这篇Go团队的[文章](https://blog.golang.org/go-slices-usage-and-internals)来获得设计和实现slice的更多细节
+
+现在我们看完了array和slice，下面是另一个重要的内置数据结构：map
+
 ## Maps
+
+Map是Go内置的关联数据类型（其他语言可能成为哈希或者字典）
 
 ```go
 package main
 import "fmt"
 func main(){
+  //要创建一个空的map，使用内置make函数：make(map[key-type]val-type)
   m:=make(map[string]int)
+  //通过经典的name[key]=val语法来设置key/value对
   m["k1"]=7
   m["k2"]=13
   fmt.Println("map:",m)
+  //通过name[key]来获取一个value
   v1:=m["k1"]
   fmt.Println("v1: ",v1)
+  //len函数返回map中键值对的个数
   fmt.Println("len:",len(m))
+  内置的delete函数将移除map中的键值对
   delete(m,"k2")
   fmt.Println("map:",m)
+  //第一个值是该key的value，但此处不需要，故使用空白占位符“_”忽略
+  //第二个可选的返回值表明该键是否在map中，这样可以消除不存在的键，和键值为0或者""的歧义
   _,prs:=m["k2"]
   fmt.Println("prs:",prs)
+  //声明并初始化map
   n:=map[string]int{"foo":1,"bar":2}
   fmt.Println("map:",n)
 }
 ```
 
+map将以[ k:v k:v ]的形式打印
+
 ## Range
+
+range可以遍历各种数据结构中的元素。让我们看看range是如何在我们已经学过的数据结构中应用的。
 
 ```go
 package main
 import "fmt"
 func main(){
+  //这里使用range来计算元素的和，数组也是类似的用法
   nums:=[]int{2,3,4}
   sum:=0
   for _,num:=range nums{
     sum+=num
   }
   fmt.Println("sum:",sum)
+  //在slice和array上的range均为每个条目提供了索引和值
   for i,num:=range nums{
     if num==3{
       fmt.Pritnln("index",i)
     }
   }
+  //map上的range通过key/value对进行遍历
   kvs:=map[string]string{"a":"apple","b":"banana"}
   for k,v:=range kvs{
     fmt.Printf("%s -> %s\n",k,v)
   }
+  //range可以仅通过key进行遍历
+  for k:= range kvs{
+    fmt.Println("key:",k)
+  }
+  //range作用在string上将得到unicode code points，第一个值是字符的起始字节索引，第二个值是字符本身
   for i,c:range "go" {
     cmt.Println(i,c)
   }
@@ -259,16 +365,22 @@ func main(){
 
 ## Functions
 
+函数是Go的核心内容。我们将通过不同的例子来学习函数的相关内容。
+
 ```go
 package main
 import "fmt"
+//这个函数接收两个int并以int类型返回他们的和
 func plus(a int,b int) int{
+  //Go需要显式的return语句，它不会自动返回最后一个表达式的值
   return a+b
 }
+//如果有多个连续的相同类型的参数，可以忽略前面的类型声明
 func plusPlus(a,b,c int) int{
   return a+b+c
 }
 func main(){
+  //如你所想的那样调用函数
   res := plus(1,2)
   fmt.Println("1+2=",res)
   res = plusPlus(1,2,3)
@@ -276,28 +388,40 @@ func main(){
 }
 ```
 
+Go函数还有些其他的特色，其中一个是返回多个值，我们在下一节看。
+
 ## Multiple Return Values
+
+Go内置支持了返回多个值。这一特点经常用于Go的习惯用法，例如同时返回结果和错误值
 
 ```go
 package main
 import "fmt"
+//方法签名中的(int,int)表明它将返回两个int值
 func vals()(int,int){
   return 3,7
 }
 func main(){
+  //这里我们通过多重赋值来使用两个不同的返回值
   a,b := vals()
   fmt.Println(a)
   fmt.Println(b)
+  //如果只需要返回结果的子集，使用空白占位符_
   _,c := vals()
   fmt.Println(c)
 }
 ```
 
+接受不同个数的参数是Go函数的另一个很棒的特点，我们将在下一节看到。
+
 ## Variadic Functions
+
+变参函数，可以使用任意数量的参数来进行调用。例如fmt.Println是一个常见的变参函数。
 
 ```go
 package main
 import "fmt"
+//这是一个接收任意数量的int值的函数
 func sum(nums ...int){
   fmt.Print(nums," ")
   total := 0
@@ -309,16 +433,23 @@ func sum(nums ...int){
 func main(){
   sum(1,2)
   sum(1,2,3)
+  //如果你已经在一个slice中定义了多个参数，可以使用func(slice...)来直接应用到变参函数中
   nums :=[]int{1,2,3,4}
   sum(nums...)
 }
 ```
 
+关于Go函数另一个关键方面是它形成闭包的能力，下一节可以看到。
+
 ## Closures
+
+Go支持匿名函数，它可以形成闭包。当你想要定义一个不记名的内部函数时，匿名函数就很有用了。
 
 ```go
 package main
 import "fmt"
+//intSeq函数返回另一个函数，它定义在了intSeq函数内部，并且是匿名的。
+//返回的函数关闭变量i以形成闭包
 func intSeq() func int{
   i := 0
   return func() int{
@@ -327,16 +458,25 @@ func intSeq() func int{
   }
 }
 func main(){
+  //调用intSeq，并将结果(一个函数)赋予nextInt
+  //这个函数持有一个自己的i值，每次调用nextInt时都会更新
   nextInt:=intSeq()
+  //多次调用nextInt函数可以看到闭包的效果
+  //zephyr:如非闭包写法，每次函数都会进行初始化变量i，反复调用intSeq不会有这个效果
   fmt.Println(nextInt())
   fmt.Println(nextInt())
   fmt.Pritnln(nextInt())
+  //要确认该状态对该特定函数是唯一的，请创建并测试一个新函数。
   newInts:=intSeq()
   fmt.Println(newInts())
 }
 ```
 
+函数的最后一个特点是递归。
+
 ## Recursion
+
+Go支持递归函数。下面是一个经典的斐波那契数列示例
 
 ```go
 package main
@@ -345,12 +485,15 @@ func fact(n int) int {
   if n==0 {
     return 1
   }
+  //fact函数调用自身，直到n为0
   return n * fact(n-1)
 }
 func main(){
   fmt.Println(fact(7))
 }
 ```
+
+下一节：指针。
 
 ## Pointers
 
