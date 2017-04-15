@@ -497,13 +497,21 @@ func main(){
 
 ## Pointers
 
+Go可以使用指针，让你在程序中传递值或记录的引用。
+
+下面通过两种方式的对比来展示指针的使用：`zeroval`和`zeroptr`
+
 ```go
 package main
 import "fmt"
+//zeroval将取得ival的值的拷贝，与调用方不同
 func zeroval(ival int){
   ival = 0
 }
+//zeroptr有一个*int类型的参数，代表它接收的是一个指针
 func zeroptr(iptr *int){
+  //*iptr解引用，从内存指定地址中获取存放的值
+  //对解引用指针的赋值将改变指定地址上的值
   *iptr = 0
 }
 func main(){
@@ -511,13 +519,19 @@ func main(){
   fmt.Println("initial:",i)
   zeroval(i)
   fmt.Println("zeroval:",i)
+  //&i 语法将获得变量i的内存地址，也就是指向变量i的指针
   zeroptr(&i)
   fmt.Println("zeroptr:",i)
+  //指针也可以被打印
   fmt.Println("pointer:",&i)
 }
 ```
 
+zeroval没有改变main函数中i的值，而zeroptr会，因为它拥有指向变量i的内存地址。
+
 ## Structs
+
+Go的Struct结构是字段类型的集合。对于从记录中将数据组织到一起很有帮助。
 
 ```go
 package main
@@ -527,19 +541,29 @@ type person struct{
   age int
 }
 func main(){
+  //这个语法创建了一个新的struct
   fmt.Println(person{"Bob",20})
+  //在初始化struct时，可以指定字段名
   fmt.Println(person{name:"Alice",age:30})
+  //被忽略的字段将会被初始化为零
   fmt.Println(person{name:"Fred"})
+  //一个&将产生struct的指针
   fmt.Println(&person{name:"Ann",age:40})
   s:=person{name:"Sean",age:50}
+  //通过点号访问结构体中的字段
+  fmt.Println(s.name)
   sp:=&s
   fmt.Println(sp.age)
+  //对于结构体的指针也可以使用点号操作符，指针将会自动解引用
   sp.age=51
+  //结构体是可变的
   fmt.Println(sp.age)
 }
 ```
 
 ## Methods
+
+Go支持在结构体上定义方法。
 
 ```go
 package main
@@ -547,28 +571,37 @@ import "fmt"
 type rect struct{
   width,height int
 }
+//area方法有一个rect指针类型的接收器
 func (r *rect) area() int{
   return r.width * r.height
 }
+//即可以定义指针类型的接收器，也可以定义值类型的接收器
 func (r rect) perim() int{
   return 2*r.width+2*r.height
 }
 func main(){
   r:=rect{width:10,height:5}
+  //调用定义的方法
   fmt.Println("area: ",r.area())
   fmt.Println("perim: ",r.perim())
+  //Go为方法调用自动处理了值和引用的转换。使用指针接收器可以避免获得方法调用的拷贝(?)或允许方法修改接收到的struct值
   rp:=&r
   fmt.Println("area: ",rp.area())
   fmt.Println("perim: ",rp.perim())
 }
 ```
 
+接下来我们将看到Go组织和命名相关方法的集合的机制：接口
+
 ## Interfaces
+
+接口是方法签名的命名集合。
 
 ```go
 package main
 import "fmt"
 import "math"
+//这是一个geometry的基本接口，本例中将在rect类型和circle类型中实现这个接口
 type geometry interface{
   area() float64
   perim() float64
@@ -579,6 +612,7 @@ type rect struct{
 type circle struct{
   radius float64
 }
+//在Go中，实现一个接口只需要实现其中定义的所有方法即可
 func (r rect) area() float64{
   return r.width * r.height
 }
@@ -591,6 +625,8 @@ func (c circle) area() float64{
 func (c circle) perim() float64{
   return 2 * math.Pi * c.radius
 }
+//如果变量是接口类型，那么它可以调用接口内定义的方法
+//这是一个通用的measure方法，利用它能够工作在任何geometry上
 func measure(g geometry){
   fmt.Println(g)
   fmt.Println(g.area())
@@ -599,10 +635,15 @@ func measure(g geometry){
 func main(){
   r:=rect{width:3,height:4}
   c:=circle{radius:5}
+  //rect和circle均实现了geometry接口，所以可以作为measure的参数
   measure(r)
   measure(c)
 }
 ```
+
+关于接口，想要了解更多，可以查看[great blog post](http://jordanorelli.tumblr.com/post/32665860244/how-to-use-interfaces-in-go).
+
+下一节，Errors。
 
 ## Errors
 
