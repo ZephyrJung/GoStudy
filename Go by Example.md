@@ -713,6 +713,8 @@ func main(){
 
 ## Goroutines
 
+goroutine是一个轻量级的执行线程。
+
 ```go
 package main
 import "fmt"
@@ -722,39 +724,63 @@ func f(from string){
   }
 }
 func main(){
+  //假设我们有个f(s)的函数调用。这里我们通过一般方法调用，令其同步执行
   f("direct")
+  //要想让这个函数在goroutine中触发，使用go f(s)。这个新的goroutine将会与调用它的并行执行
   go f("goroutine")
+  //我们也可以启动一个调用匿名函数的goroutine
   go func(msg string){
 	fmt.Println(msg)
   }("going")
+  //现在，这两个方法调用在独立的goroutine中异步执行了，故方法执行直接落到了这里
+  //Scanln代码需要在程序退出前按下一个键
   var input string
   fmt.Scanln(&input)
   fmt.Println("done")
 }
 ```
 
+当我们运行这个程序的时候，我们将首先看到阻塞调用，然后是两个goroutine的交错输出。这个交错反应了goroutine在Go运行时是并发执行的。
+
+下面我们来看下并发Go程序对goroutine的补充：channel。
+
 ## Channels
+
+Channel是连接并发执行的goroutine的管道。你可以从一个goroutine传递值到channel中，再在另一个goroutine接收它。
 
 ```go
 package main
 import "fmt"
 func main(){
+  //通过make(chan val-type)创建新的channel
+  //channel的类型依赖于它们要传递的值
   messages:=make(chan string)
+  //向channel传递值使用channel <- 语法。在这里我们从一个新的goroutine中发送了一个"ping"到message通道中
   go func(){messages<-"ping"}()
+  //<-channel语法从channel中获取值。这里我们接收了上面发送的"ping"信息并打印
   msg:=<-messages
   fmt.Println(msg)
 }
 ```
 
+当我们运行这个程序时，"ping"信息成功的通过我们的channel从一个goroutine传递到了另一个。
+
+默认情况下，发送和接收在发送者和接受者都准备好之前阻塞。这个特性允许我们在程序结尾等待"ping"信息而无需使用其他的同步手段
+
 ## Channel Buffering
+
+默认下channel没有缓冲区，这意味着他们将只有在响应的接收者(<-chan)准备好时，才能允许发送(chan<-)。具有缓冲区的channel，接受有限个数的值，而无需相应的接收者。
 
 ```go
 package main
 import "fmt"
 func main(){
+  //这里我们创建了一个能够缓冲2个字符串值的channel
   messages:=make(chan string,2)
+  //由于channel带有缓冲区，我们可以发送值，无需响应的并发接收
   messages<-"buffered"
   messages<-"channel"
+  //稍后，我们像往常一样，接收了这两个值
   fmt.Println(<-messages)
   fmt.Println(<-messages)
 }
@@ -762,31 +788,44 @@ func main(){
 
 ## Channel Synchronization
 
+我们可以使用channel来跨goroutine同步执行。这里是一个使用阻塞接收来等待goroutine结束的例子。
+
 ```go
 package main
 import "fmt"
 import "time"
-func worker(donw chan bool){
+//这个方法将在一个goroutine中运行。
+//done channel用来通知其他的goroutine这个方法执行完毕
+func worker(done chan bool){
   fmt.Print("working...")
   time.Sleep(time.Second)
   fmt.Println("done")
+  //发送一个值来通知这里已经做完
   done<-true
 }
 func main(){
+  启动一个worker goroutine，赋予它用以通知的channel
   done:=make(chan bool,1)
   go worker(done)
+  //在channel接收到来自worker的通知前，保持阻塞
   <-done
 }
 ```
 
+如果你移除了<-done行，这个程序可能会在worker开始前就结束。
+
 ## Channel Directions
+
+当把channel用作函数的参数时，你可以指定一个channel是否只发送或者只接收数据。这种特异性增加了程序的类型安全性。
 
 ```go
 package main
 import "fmt"
+//ping函数只接受一个发送数据的channel，如果试图在其上获取数据，将会引发编译时异常
 func ping(pings chan<- string,msg string){
   pings<-msg
 }
+//pong函数接受一个通道用于接收(pings)，另一个用于发送(pongs)
 func pong(pings <-chan string,pongs chan<- string){
   msg:=<-pings
   pongs<-msg
@@ -802,13 +841,17 @@ func main(){
 
 ## Select
 
+Go的select让你能够等待多个channel操作。通过select结合goroutine和channel是Go的重要特色。
+
 ```go
 package main
 import "time"
 import "fmt"
 func main(){
+  //本例中我们将在两个通道中进行选择
   c1:=make(chan string)
   c2:=make(chan string)
+  //每个通道都会在一定时间后接收到一个值，在并发的goroutine中模拟阻塞RPC操作执行
   go func(){
     time.Sleep(time.Second*1)
     c1<-"one"
@@ -817,6 +860,7 @@ func main(){
     time.Sleep(time.Second*2)
     c2<-"two"
   }()
+  //我们将使用select来同时等待这两个值，当它们到达时打印。
   for i:=0;i<2;i++{
     select{
     case msg1:=<-c1:
@@ -828,24 +872,34 @@ func main(){
 }
 ```
 
+按照预期，我们将接收到"one"，然后"two"。
+
+注意，整个执行只需要不到2秒的时间，因为1秒和2秒的沉睡是并发执行的。
+
 ## Timeouts
+
+超时对于连接到外部资源的程序或其他需要绑定执行时间的程序很重要。在Go中，可以通过channel和select轻松而优雅的实现超时。
 
 ```go
 package main
 import "time"
 import "fmt"
 func main(){
+  //在本例中，假设我们执行了一个外部调用，它在两秒后将结果返回到通道c1上
   c1:=make(chan string,1)
   go func(){
     time.Sleep(time.Second*2)
     c1<-"result 1"
   }()
+  //这里是用select实现超时。res:=<-c1等待一个结果，而<-Time.After等待超时1秒后发送一个值。
+  //由于select将在有第一个准备就绪的接收时继续，我们会在操作超过允许的1秒时进入超时事件。
   select{
   case res:=<-c1:
     fmt.Println(res)
   case <-time.After(time.Second*1):
   	fmt.Println("timeout 1")  
   }
+  //如果我们允许一个更长的超时时间3秒，则将能成功得到c2的值，并打印
   c2:=make(chan string,1)
   go func(){
     time.Sleep(time.Second*2)
@@ -860,7 +914,13 @@ func main(){
 }
 ```
 
+运行这个程序，将显示第一个操作超时了，第二个则成功。
+
+使用select超时模式需要在通道上进行结果通讯。一般情况下这是很好的主意，因为其他的重要Go特性基于通道和选择。我们将在之后看到有关的两个例子：timer和ticker
+
 ## Non-Blocking Channel Operations
+
+channel上简单的发送和接收是阻塞的。然而，我们可以使用select和default子句来实现非阻塞发送、接收甚至非阻塞的多路选择。
 
 ```go
 package main
@@ -868,6 +928,8 @@ import "fmt"
 func main(){
   messages:=make(chan string)
   signals:=make(chan bool)
+  //这是一个非阻塞的接收。如果message的值可以获取，select将随值进入<-message子句
+  //否则将立刻进入default事件
   select{
   case msg:=<-messages:
     fmt.Println("received message",msg)
@@ -875,12 +937,15 @@ func main(){
     fmt.Pritln("no message received")
   }
   msg:="hi"
+  //类似的有非阻塞发送
   select{
   case messages<-msg:
     cmt.Println("sent message",msg)
   default:
     fmt.Println("no message sent")
   }
+  //我们可以在default上使用多个事件来实现多路非阻塞select。
+  //这里我们试图在message和signal上均进行非阻塞接收
   select{
   case msg:=<-messages:
     fmt.Println("received message",msg)
@@ -894,12 +959,18 @@ func main(){
 
 ## Closing Channels
 
+关闭通道意味着不会再有值在其上发送。这对于通道的接收方通讯完成很有帮助
+
 ```go
 package main
 import "fmt"
+//在这个例子中，我们将使用一个作业通道将工作从主函数goroutine传递给工人 goroutine。当没有更多作业给工人时，我们将关闭工作渠道。
 func main(){
   jobs:=make(chan int,5)
   done:=make(chan bool)
+  //下面是工人goroutine。它通过j,more:=<-jobs反复获取作业
+  //在这个2返回值的接收中，如果作业关闭，所有值都已接收，more会变为false
+  //我们用其在完成所有作业时进行已完成通知
   go func(){
     for{
       j,more:=<-jobs
@@ -912,26 +983,34 @@ func main(){
       }
     }
   }()
+  //此处向工人发送了3个作业，然后关闭它
   for j:=1;j<=3;j++{
     jobs<-j
     fmt.Println("sent job",j)
   }
   close(jobs)
   fmt.Println("sent all jobs")
+  //使用前面见过的同步机制来等待工人、
   <-done
 }
 ```
 
+关闭通道令我们自然而然的想到下一个例子：遍历通道。
+
 ## Range over Channels
+
+在前面的例子中，我们看到如何使用for和range来遍历基本的数据结构。我们同样可以使用这个语法来遍历通道上接收的值。
 
 ```go
 package main
 import "fmt"
 func main(){
+  //遍历queue通道上的2个值
   queue:=make(chan string,2)
   queue<-"one"
   queue<-"two"
   close(queue)
+  //range遍历通道上接收的每个值。由于在上面关闭了通道，这个遍历将在接收2个值后结束。
   for elem:=range queue{
     fmt.Println(elem)
   }
