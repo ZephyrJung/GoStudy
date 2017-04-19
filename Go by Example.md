@@ -874,7 +874,7 @@ func main(){
 
 按照预期，我们将接收到"one"，然后"two"。
 
-注意，整个执行只需要不到2秒的时间，因为1秒和2秒的沉睡是并发执行的。
+注意，整个执行只需要大约2秒的时间，因为1秒和2秒的沉睡是并发执行的。
 
 ## Timeouts
 
@@ -1019,14 +1019,19 @@ func main(){
 
 ## Timers
 
+我们常想在未来的某一刻执行Go代码，或者在某一时间内重复执行。Go内置的timer和ticker使这些任务十分简易。首先我们看看timer，然后再看ticker。
+
 ```go
 package main
 import "time"
 import "fmt"
 func main(){
+  //timer代表未来的一个单独事件。你要告诉它要等待多久，它提供一个通道，在指定时间发出通知。下面这个timer将等待2秒钟
   timer1:=time.NewTimer(time.Second*2)
+  //定时器通道由于操作<-timer1.c发生阻塞，直到它发送了一个值来表明定时器到时
   <-timer1.C
   fmt.Println("Timer 1 expired")
+  //如果你仅仅想等待一段时间，可以用time.Sleep，使用timer的一个原因是，你可以在计时结束前取消，如下例：
   timer2:=time.NewTimer(time.Second)
   go func(){
     <-timer2.C
@@ -1039,31 +1044,43 @@ func main(){
 }
 ```
 
+第一个timer将在启动程序后大约2秒到时，但第二个应会在其有机会到时前先行停止。
+
 ## Tickers
+
+timer用来在将来的某一时间做某事一次。而ticker会在一个指定时间间隔重复做某事。这里是一个ticker的例子，它会在我们停止之前定期触发。
 
 ```go
 package main
 import "time"
 import "fmt"
 func main(){
+  //ticker与timer的机制相似，都是一个发送值的通道
+  //这里我们使用channel内置的range来遍历每500ms到达的值
   ticker:=time.NewTicker(time.Millisecond*500)
   go func(){
     for t:=range ticker.C{
 	  fmt.Prinltn("Tick at ",t)
     }
   }()
+  //ticker可以像timer一样停止。一旦ticker停止，将不会在其通道上接收到任何信息。我们将在1600ms后结束。
   time.Sleep(time.Millisecond*1600)
   ticker.Stop()
   fmt.Println("Ticker stopped")
 }
 ```
 
+运行这个程序，在结束之前，应该会tick三次。
+
 ## Worker Pools
+
+本例中我们将看到如何使用goroutine和channel来实现一个工人池
 
 ```go
 package main
 import "fmt"
 import "time"
+//这里是我们将要运行多个并发实例的工人。他们将从jobs通道获取任务，并将相应的结果返回到results上。我们将在每个作业沉睡1秒，来模拟一个复杂的任务。
 func worker(id int,jobs <-chan int,results chan<- int){
   for j:=range jobs{
     fmt.Println("worker",id,"started job",j)
@@ -1073,47 +1090,67 @@ func worker(id int,jobs <-chan int,results chan<- int){
   }
 }
 func main(){
+  //为了使用工人池，我们需要派发任务并且回收结果。我们使用两个通道来做这件事
   jobs:=make(chan int,100)
   results:=make(chan int,100)
+  //这里启动了3个工人，初始时阻塞，因为当前没有作业
   for w:=1;w<=3;w++{
     go worker(w,jobs,results)
   }
+  //添加5个作业，然后关闭通道来表明这就是所有的工作
   for j:=1;j<=5;j++{
     jobs<-j
   }
   close(jobs)
+  
   for a:=1;a<=5;a++{
     <-results
   }
 }
 ```
 
+运行的项目展示了有5个作业得以被不同的工人执行。尽管总共有5秒钟的时间，这个程序只需要2秒钟，因为有3名工作人员同时进行操作。
+
+> 同时启动了3个worker，来监听通道是否有作业发出，无作业时worker不会进入循环体，为空操作。从而形成工人池
+
 ## Rate Limiting
+
+速率限制是控制资源利用和维护服务质量的重要机制。Go通过goroutine，channel和ticker可以优雅的支持速率控制。
 
 ```go
 package main
 import "time"
 import "fmt"
 func main(){
+  //首先，我们看下基本的速率控制。
+  //假设我们想要控制处理的输入请求，我们通过同一个通道来为这些请求提供服务
   requests:=make(chan int,5)
   for i:=1;i<=5;i++{
     request<-i
   }
   close(requests)
+  //limiter通道将每过200毫秒接收一次数据。这是速率控制策略中的调节器
   limiter:=time.Tick(time.Millisecond*200)
+  //在服务每个请求之前，通过limiter通道阻塞接收，我们将自己限制在每200ms处理1个请求上。
   for req:=range request{
     <-limiter
     fmt.Println("request",req,time.now())
   }
+  //我们可能希望在我们的速率限制方案中允许短时间的请求，同时保留整体速率限制。 
+  //我们可以通过缓冲限制器通道来实现这一点。
+  //这个burstyLimiter通道将允许多达3个事件的突发。
   burstyLimiter:=make(chan time.Time,3)
+  //填充通道，来展示可允许的突发
   for i:=0;i<3;i++{
     burstyLimiter<-time.Now()
   }
+  //每过200毫秒将试图添加一个新值到burstyLimiter，最多3个
   go func(){
     for t:=range time.Tick(time.Millisecond*200){
       burstyLimiter<-t
     }
   }()
+  //模拟5个输入请求。前3个将受益于burstyLimiter的突发能力
   burstyRequests:=make(chan int,5)
   for i:=1;i<=5;i++{
     burstyRequest<-i
@@ -1126,7 +1163,13 @@ func main(){
 }
 ```
 
+运行我们的程序，我们看到第一批请求根据需要每200毫秒处理一次。
+
+对于第二批请求，由于可突发速率限制，我们立即为前3个服务，然后以约200ms的延迟提供剩余的2个。
+
 ## Atomic Counters
+
+Go中管理状态的主要机制是通过渠道进行沟通。 我们以工人池为例。 还有一些管理状态的其他选项。 这里我们来看一下使用sync / atomic包来进行多个goroutines访问的原子计数器。
 
 ```go
 package main
@@ -1135,20 +1178,31 @@ import "time"
 import "sync/atomic"
 
 func main(){
+  //我们使用无符号整数来代表我们的计数器
   var ops unit64=0
+  //为了模拟并发更新操作，我们将启动50个goroutine，每个都会在每过1毫秒时增长一次计数器
   for i:=0;i<50;i++{
     go func(){
       for{
+        //为了原子地增加计数器，我们使用AddUint64，使用＆语法给它我们的ops计数器的内存地址。
         atomic.AddUnit64(&ops,1)
+        //在两个增长之间稍作等待
         time.Sleep(time.Millisecond)
       }
     }()
   }
+  //等一下让一些操作积累起来。
   time.Sleep(time.Second)
+  //为了安全地使用计数器，当它仍被其他goroutine更新时，我们通过LoadUint64将当前值的副本提取到opsFinal中。
+  //如上所述，我们需要给出这个函数来获取值的内存地址和操作。
   opsFinal:=atomic.LoadUnit64(&ops)
   fmt.Println("ops:",opsFinal)
 }
 ```
+
+运行程序可以看到我们执行了大约40,000次操作。
+
+接下来我们将看看互斥，另一个用于管理状态的工具。
 
 ## Mutexes
 
