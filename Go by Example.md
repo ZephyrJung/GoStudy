@@ -1206,6 +1206,8 @@ func main(){
 
 ## Mutexes
 
+在前面的例子中我们看到如何使用原子操作管理简单的计数器状态。为了处理更复杂的状态，我们可以使用一个`mutext`来安全的访问不同gorotine之间的数据。
+
 ```go
 package main
 import(
@@ -1216,23 +1218,34 @@ import(
   "time"
 )
 func main(){
+  //这个例子中，状态是一个map
   var state=make(map[int]int)
+  //这个mutext将同步访问状态值
   var mutex=&sync.Mutex{}
+  //我们将记录做了多少读写操作
   var readOps unit64=0
   var writeOps unit64=0
+  //这里我们启动了100个goroutine来重复读取状态值
+  //每毫秒在每个goroutine执行一次
   for r:=0;r<100;r++{
     go func(){
       total:=0
       for{
+        //每次读取时我们将获得一个进入的钥匙
+        //Lock()住mutex来保证独家访问状态值
+        //在选中的钥匙上读取值，Unlock()掉mutext
+        //对readOps计数加1
         key:=rand.Intn(5)
         mutex.Lock()
         total+=state[key]
         mutex.Unlock()
         atomic.AddUnit64(&readOps,1)
+        //每次操作等待一下
         time.Sleep(time.Millisecond)
       }
     }()
   }
+  //再启动10个模拟写的goroutine，与读取类似的模式
   for w:=0;w<10;w++{
     go func(){
       for{
@@ -1246,18 +1259,27 @@ func main(){
       }
     }()
   }
+  //让这10个go协程在state和mutext上工作一会儿
   time.Sleep(time.Second)
+  //获取并且报告最终操作的个数。
   readOpsFinal:=atomic.LoadUnit64(&readOps)
   fmt.Println("readOps:",readOpsFinal)
   writeOpsFinal:=atomic.LoadUnit64(&writeOps)
   fmt.Println("writeOps:",writeOpsFinal)
+  //随着最后一次锁住状态，展示它是如何结束的
   mutex.Lock()
   fmt.Println("state:",state)
   mutex.Unlock()
 }
 ```
 
+运行程序可以看到我们在mutex同步状态上执行了将近90,000操作。
+
+下一节我们将看到如何仅仅使用goroutine和channel实现同样的状态管理
+
 ## Stateful Goroutines
+
+在上个例子我们使用mutex显式锁定多个goroutine要同步访问的共享状态。另一个选择是使用goroutine和channel内置的同步功能来达到相同的结果。这种基于渠道的方法与Go通过通信和拥有完全一个goroutine的每个数据来共享内存的想法相一致。
 
 ```go
 package main
@@ -1267,6 +1289,10 @@ import(
   "sync/atomic"
   "time"
 )
+//在这个例子中，状态值将被一个单独的goroutine拥有
+//这保证了数据不会受到并发访问的影响
+//为了读或写状态值，其它goroutine将向拥有它的goroutine发送一个消息，然后接收其回复。
+//readOp和writeOp结构封装了这些请求和响应
 type readOp struct{
   key int
   resp chan int
@@ -1277,10 +1303,16 @@ type writeOp struct{
   resp chan bool
 }
 func main() {
+  //像之前一样我们记录执行了多少次操作
   var readOp unit64=0
   var writeOps unit64=0
+  //reads和writes通道将被用于其它goroutine分别发送读写请求
   reads:=make(chan *readOp)
   writes:=make(chan *writeOp)
+  //这里便是拥有状态值的goroutine，与之前一样是个map，但被私有化
+  //这个goroutine反复选择reads和writes通道，响应到达的请求。
+  //首先执行所请求的操作然后在响应通道上发送值来表示成功执行响应
+  //(或者reads期望的数据)
   go func(){
     var state=make(map[int]int)
     for{
@@ -1293,6 +1325,9 @@ func main() {
       }
     }
   }()
+  //启动100个goroutine，通过读取通道来读取有状态的goroutine
+  //每次读取需要构建一个readOp，通过reads发送给它
+  //再通过所提供的resp通道获取结果
   for r:=0;r<100;r++{
     go func(){
       for {
@@ -1307,6 +1342,7 @@ func main() {
       }
     }()
   }
+  //启动10个写操作
   for w:=0;w<10;w++{
     go func(){
       for {
@@ -1325,6 +1361,8 @@ func main() {
   fmt.Println("writeOps:",writeOpsFinal)
 }
 ```
+
+运行项目显示基于gouroutine的状态管理完成了大约80,000操作。
 
 ## Sorting
 
