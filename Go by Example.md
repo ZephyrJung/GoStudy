@@ -1366,17 +1366,21 @@ func main() {
 
 ## Sorting
 
+sort包实现了内置和自定义类型的排序。首先看看内置类型的排序。
+
 ```go
 package main
 import "fmt"
 import "sort"
 func main(){
+  //sort改变了给定的slice，而不是返回一个新的
   strs:=[]string{"c","a","b"}
   sort.Strings(strs)
   fmt.Println("Strings:",strs)
   ints:=[]int{7,2,4}
   sort.Ints(ints)
   fmt.Println("Ints:",ints)
+  //可以使用sort检查一个slice是不是已经排好序了
   s:=sort.IntsAreSorted(ints)
   fmt.Println("Sorted:",s)
 }
@@ -1384,11 +1388,18 @@ func main(){
 
 ## Sorting by Functions
 
+有时候我们想要对一个集合进行非自然顺序的排序。例如，我们想要把字符串根据长度而非字典顺序排序，下面是一个定制排序的例子。
+
 ```go
 package main
 import "fmt"
 import "sort"
+//为了根据自定义函数排序，我们需要相应的类型
+//这里我们创建了一个ByLength类型
+//这就是一个[]string类型的别名
 type ByLength []string
+//我们在ByLength上实现了sort接口的Len、Less和Swap方法
+//这里我们想要按照字符串长度的增序排列
 func (s ByLength) Len() int{
   return len(s)
 }
@@ -1398,12 +1409,16 @@ func (s ByLength) Swap(i,j int){
 func (s ByLength) Less(i,j int) bool {
   return len(s[i])<len(s[j])
 }
+//通过将原有的fruits片段转换为ByLength
+//就可以使用sort.Sort来进行自定义排序了。
 func main(){
   fruits:=[]string{"peach","banana","kiwi"}
   sort.Sort(ByLength(fruits))
   fmt.Println(fruits)
 }
 ```
+
+通过类似的模式创建自定义类型，实现三个接口方法，然后调用sort，我们可以对集合进行任意的排序。
 
 ## Panic
 
