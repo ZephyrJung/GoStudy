@@ -1422,11 +1422,17 @@ func main(){
 
 ## Panic
 
+`panic`通常指发生了未曾预料的错误。大多数情况下，我们使用它来将不应当在正常操作中发生的东西快速失败，或者不准备妥善处理。
+
 ```go
 package main
 import "os"
 func main(){
+  //我们将在整个网站使用panic来检查意外的错误。
+  //这是该网站上唯一旨在panic的程序。
   panic("a problem")
+  //panic的一个常见作用是终止一个函数返回了一个不知道如何处理或者不想处理的错误。
+  //这里是一个panic的例子，在创建一个新文件时发生意外错误
   _,err:=os.Create("/tmp/file")
   if err!=nil{
     panic(err)
@@ -1434,13 +1440,22 @@ func main(){
 }
 ```
 
+运行这个程序将引起一个panic，打印错误信息和goroutine踪迹，并以非0状态退出。
+
+注意，不像一些用异常来处理大多错误的语言，在Go的习惯用法中，尽可能使用错误指示的返回值。
+
 ## Defer
+
+defer用于确保一个函数调用在程序执行中延迟作用，经常用于清理目的。`defer`常用语其他语言的`ensure`和`finnaly`用的地方。
 
 ```go
 packgae main
 import "fmt"
 import "os"
+//假设我们想要创建并写一个文件，在完成后关闭它。
 func main(){
+  //在获取一个文件对象后立即使用defer并关闭这个文件
+  //这个将在main函数末尾关闭的时候执行，在writeFile完成后
   f:=createFile("/tmp/defer.txt")
   defer closeFile(f)
   writeFile(f)
@@ -1462,7 +1477,10 @@ func closeFile(f *os.File){
   f.Close()
 }
 ```
+运行程序，确认这个文件的确在写之后再关闭的。
+
 ## Collection Functions
+
 ```go
 package main
 import "strings"
