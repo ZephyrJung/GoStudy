@@ -1481,10 +1481,17 @@ func closeFile(f *os.File){
 
 ## Collection Functions
 
+我们经常需要我们的程序对数据集合执行操作，例如选择满足给定谓词的所有项目或将所有项目映射到具有自定义函数的新集合。
+
+一些语言通常的惯用法是使用泛型数据结构和算法。 Go不支持泛型; 在Go中，通常在程序和数据类型特别需要时提供集合功能。
+
+以下是一些用于字符串切片的示例集合函数。 您可以使用这些示例来构建自己的函数。 请注意，在某些情况下，直接内联集合操作代码可能是最为清晰的，而不是创建和调用帮助函数。
+
 ```go
 package main
 import "strings"
 import "fmt"
+// 返回目标字符串t的第一个索引，如果没有找到则返回-1
 func Index(vs []string,t string) int{
   for i,v:=range vs{
     if v==t{
@@ -1493,9 +1500,11 @@ func Index(vs []string,t string) int{
   }
   return -1
 }
+//如果字符串在切片中，则返回true
 func Include(vs []string,t string) bool{
   return Index(vs,t)>=0
 }
+//如果有一个字符串满足期望的f则返回true
 func Any(vs []string,f func(string) bool) bool{
   for _,v:=range vs{
     if f(v){
@@ -1504,6 +1513,7 @@ func Any(vs []string,f func(string) bool) bool{
   }
   return false
 }
+//所有的字符串满足期望的f则返回true
 func All(vs []string,f func(string) bool) bool{
   for _,v:=range vs{
     if !f(v){
@@ -1512,6 +1522,7 @@ func All(vs []string,f func(string) bool) bool{
   }
   return true
 }
+//返回一个满足给定方法的所有字符串
 func Filter(vs []string,f func(string) bool) []string{
   vsf :=make([]string,0)
   for _,v:=range vs{
@@ -1520,6 +1531,14 @@ func Filter(vs []string,f func(string) bool) []string{
     }
   }
   return vsf
+}
+//返回一个包含将f函数应用于原始切片中每个字符串的结果的新切片。
+func Map(vs []string,f func(string) string)[] string{
+  vsm := make([]string,len(vs))
+  for i,v:=range vs{
+    vsm[i]=f(v)
+  }
+  return vsm
 }
 func main(){
   var strs=[]string{"peach","apple","pear","plum"}
@@ -1534,6 +1553,7 @@ func main(){
   fmt.Println(Filter(strs,func(v string) bool{
     return strings.Contains(v,"e")
   }))
+  //以上示例全部使用匿名函数，但也可以使用正确类型的命名函数。
   fmt.Println(Map(strs,strings.ToUpper))
 }
 ```
