@@ -1,10 +1,10 @@
 <component name="libraryTable">
   <library name="GOPATH &lt;GoStudy&gt;">
     <CLASSES>
-      <root url="file://D:/GoSpace/src/github.com" />
+      <root url="file://$PROJECT_DIR$/../GoSpace/src/github.com" />
     </CLASSES>
     <SOURCES>
-      <root url="file://D:/GoSpace/src/github.com" />
+      <root url="file://$PROJECT_DIR$/../GoSpace/src/github.com" />
     </SOURCES>
     <excluded>
       <root url="file://$PROJECT_DIR$" />

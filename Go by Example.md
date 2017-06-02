@@ -1560,12 +1560,18 @@ func main(){
 
 ## String Functions
 
+标准库的String包提供了许多有用的字符串相关的函数。这里有些示例让你对这个包有个初步的认识。
+
 ```go
 package main
 import s "strings"
 import "fmt"
+//鉴于后文大量用到，我们给字符串输出函数起一个别名
 var p=fmt.Println
 func main(){
+  //这里是字符串可以用的函数示例
+  //由于这些函数是包中的而不是字符串对象本身的方法，我们需要给他们传递一个字符串参数
+  //你可以在strings包下的doc找到更多的函数
   p("Contains: ",s.Contains("test","es"))
   p("Count: ",s.Count("test","t"))
   p("HasPrefix: ",s.HasPrefix("test","te"))
@@ -1579,12 +1585,18 @@ func main(){
   p("ToLower: ",s.ToLower("TEST"))
   p("ToUpper: ",s.ToUpper("test"))
   p()
+  //并非strings包的一部分，但是这里值得一提
+  //即获取字符串长度以及字符串中的某个字符
   p("Len: ",len("hello"))
   p("Char: ","hello"[1])
 }
 ```
 
+注意，获取长度和索引字符是工作在字节级别上的。Go使用UTF-8编码字符串。
+
 ## String Formatting
+
+Go在经典的`printf`上提供了优秀的字符串格式化支持。这里有一些常见格式化的例子。
 
 ```go
 package main
@@ -1594,30 +1606,53 @@ type point struct{
   x,y int
 }
 func main(){
+  //Go提供了一些修饰符来格式化一般的Go数值
+  //例如，这里输出了一个point结构体的实例
   p:=point{1,2}
   fmt.Printf("%v\n",p)
+  //如果值是结构体，%+v变量将输出结构体中的域名称
   fmt.Printf("%+v\n",p)
+  //%#v将打印Go语法形式
   fmt.Printf("%#v\n",p)
+  //要想打印值的类型，使用%T
   fmt.Printf("%T\n",p)
+  //格式化输出布尔值
   fmt.Printf("%t\n",true)
+  //整数有许多格式化选项，使用%d来进行标准十进制格式化
   fmt.Printf("%d\n",123)
+  //这样打印了二进制形式
   fmt.Printf("%b\n",14)
+  //这里打印了十进制数字对应的字符
   fmt.Printf("%c\n",33)
+  //%x提供了十六进制编码
   fmt.Printf("%x\n",456)
+  //浮点数也有许多格式化选项，标准十进制使用%f
   fmt.Printf("%f\n",78.9)
+  //%e和%E格式化浮点数为科学计数法
   fmt.Printf("%e\n",123400000.0)
   fmt.Printf("%E\n",123400000.0)
+  //基本的字符串输出，使用%s
   fmt.Pirntf("%s\n","\"string\"")
+  //将Go代码中的字符串加引号输出(等同参数形式)
   fmt.Printf("%q\n","\"string\"")
+  //将字符串十六进制编码化
   fmt.Printf("%x\n","hex this")
+  //打印一个指针
   fmt.Printf("%p\n",&p)
+  //控制数字输出的宽度和精度，在%后面跟上数字可以控制宽度,.后面跟上数字控制精度
+  //默认靠右显示，用空格填充
   fmt.Printf("|%6d|%6d|\n",12,345)
   fmt.Printf("|%6.2f|%6.2f|\n",1.2,3.45)
+  //靠左对齐使用-
   fmt.Printf("|%-6.2f|%-6.2f|\n",1.2,3.45)
+  //你可能也需要控制字符串输出的格式，特别是要以表格形式输出的时候
   fmt.Printf("|%6s|%6s|\n","foo","b")
   fmt.Printf("|%-6s|%-6s|\n","foo","b")
+  //Printf将格式化的字符串打印到标准输出上
+  //Sprintf格式化并返回这个字符串而不打印
   s:=fmt.Sprintf("a %s","string")
   fmt.Println(s)
+  //你也可以格式化并打印到io.Writers而非os.StdOut
   fmt.Fprintf(os.Stderr,"an %s\n","error")
 }
 ```
