@@ -1659,27 +1659,44 @@ func main(){
 
 ## Regular Expressions
 
+Go为正则表达式提供了内置的支持。这里是一些常用的正则相关的任务。
+
 ```go
 package main
 import "bytes"
 import "fmt"
 import "regexp"
 func main(){
+  //测试模式是否符合字符串
   math,_:=regexp.MatchString("p([a-z]+)ch","peach")
   fmt.Printf(match)
+  //上面我们直接使用了字符串模式。但是对于其他正则任务，你需要先编译一个正则表达式结构体
   r,_:=regexp.Compile("p([a-z]+)ch")
+  //这种结构体上有许多方法。这里是一个如同上面的匹配测试
   fmt.Println(r.MatchString("peach"))
+  //这里找到一个匹配
   fmt.Println(r.FindString("peach punch"))
+  //这里也是寻找第一个匹配，但返回起止的索引而非字符串
   fmt.Println(r.FindStringIndex("peach punch"))
+  //submatch包含整串匹配，也包含内部的匹配。
   fmt.Println(r.FindStringSubmatch("peach punch"))
+  //与上面类似，返回整串匹配和内部匹配的索引信息
   fmt.Println(r.FindStringSubmatchIndex("peach punch"))
+  //这些函数的All修饰将返回输入中所有匹配的，不仅仅是第一个。例如找到所有匹配正则表达式的
   fmt.Println(r.FindAllString("peach punch pinch",-1))
   fmt.Println(r.FindAllStringSubmatchIndex("peach punch pinch",-1))
+  //第二个参数如果是非负数，则将限制最多匹配的个数
   fmt.Println(r.FindAllString("peach punch pinch",2))
+  //例子中都是字符串参数，并且用了类似于MatchString这样的名字
+  //我们可以提供[]byte参数，并将函数名中的String去掉
   fmt.Println(r.Match([]byte("peach")))
+  //当用正则表达式创建一个常量的时候你可以使用MustCompile。
+  //一个纯Compile不能用于常量，因为它有2个返回值。
   r=regexp.MustComplie("p([a-z]+)ch")
   fmt.Println(r)
+  //regexp包也能用于使用其他值替换字符串的子集
   fmt.Println(r.ReplaceAllString("a peach","<fruit>"))
+  //Func修饰允许你使用一个给定的函数修改匹配的字符串
   in:=[]byte("a peach")
   out:=r.ReplaceAllFunc(in,bytes.ToUpper)
   fmt.Println(string(out))
@@ -1688,11 +1705,14 @@ func main(){
 
 ## JSON
 
+Go内置提供了JSON的编码和解码是，包括内置和自定义的数据类型。
+
 ```go
 package main
 import "encoding/json"
 import "fmt"
 import "os"
+//我们使用这两个结构体来展示自定义类型的编码和解码
 type Response1 struct{
   Page int
   Fruits []string
@@ -1702,6 +1722,8 @@ type Response2 struct{
   Fruits []string `json:"fruits"`
 }
 func main(){
+  //首先我们来看编码基本数据类型到JSON字符串。
+  //这里有一些原子类型的示例
   bolB,_:=json.Marshal(true)
   fmt.Println(string(bolB))
   intB,_:=json.Marshal(1)
@@ -1710,40 +1732,55 @@ func main(){
   fmt.Println(string(fltB))
   strB,_:=json.Marshal("gopher")
   fmt.Println(string(strB))
+  //这里有些slice和map的例子，他们将按需编码成JSON数组和对象。
   slcD:=[]string{"apple","peach","pear"}
   slcB,_:=json.Marshal(slcD)
   fmt.Println(string(slcB))
   mapD:=map[string]int{"apple":5,"lettuce":7}
   mapB,_:=json.Marshal(mapD)
   fmt.Println(string(mapB))
+  //JSON包将自动编码你的自定义数据类型
+  //他将在编码后的输出中只包含对外的域并且用名字作为JSON键
   res1D:=&Response1{
     Page:1,
     Fruits:[]string{"apple","peach","pear"}
   }
   res1B,_:=json.Marshal(res1D)
   fmt.Println(string(res1B))
+  //你可以在结构体的域声明上定制编码后的JSON键名。
+  //可以看上面Reponse2的定义
   res2D:=&Reponse2{
     Page:1,
     Fruits:[]string{"apple","peach","pear"}
   }
   res2B,_:=json.Marshal(res2D)
   fmt.Println(string(res2B))
+  //我们需要提供一个变量来放JSON包编码的值。
+  //map[string]interface{}将承载一个字符串数据类型的map
   byt:=[]byte(`{"num":6.13,"strs":["a","b"]}`)
   var dat map[string]interface{}
+  //这里是相应的解码，以及相关错误的检查
   if err:=json.Unmarshal(byt,&dat);err!=nil{
     panic(err)
   }
   fmt.Println(dat)
+  //为了使用解码的map的值，我们需要将它们转换为合适的类型
+  //例如这里我们将num中饿值转变为float64类型
   num:dat["num"].(float64)
   fmt.Println(num)
+  //访问内部数据需要一系列的转换
   strs:=dat["strs"].([]interface{})
   str1:=strs[0].(string)
   fmt.Println(str1)
+  //我们也可以将JSON解码到定制的数据类型
+  //这样为程序添加了额外的类型安全，并不再需要在访问数据的时候进行类型断言
   str:=`{"page":1,"fruits":["apple","peach"]}`
   res:=Response2{}
   json.Unmarshal([]byte(str),&res)
   fmt.Println(res)
   fmt.Println(res.Fruits[0])
+  //在上面的例子中我们经常使用bytes和字符串在标准输出上来进行数据和JSON形式的交互
+  //我们也可以将JSON编码流入到os.Writers甚至HTTP响应体
   enc:json.NewEncoder(os.Stdout)
   d:=map[string]int{"apple":5,"lettuce":7}
   enc.Encode(d)
@@ -1752,16 +1789,22 @@ func main(){
 
 ## Time
 
+Go为时间和持续时间提供了额外支持。这里是一些例子。
+
 ```go
 package main
 import "fmt"
 import "time"
 func main(){
   p:=fmt.Pritnln
+  //首先获取当前时间
   now:=time.Now()
   p(now)
+  //你可以创建一个时间结构体，提供年月日等。
+  //时间经常与地区，例如时区关联
   then:=time.Date(2009,11,17,20,34,58,651387237,time.UTC)
   p(then)
+  //可以按照需要抽取时间变量中的不同部分
   p(then.Year())
   p(then.Month())
   p(then.Day())
@@ -1774,18 +1817,24 @@ func main(){
   p(then.Before(now))
   p(then.After(now))
   p(then.Equal(now))
+  //sub方法返回两个时间中的时间长度
   diff:=now.Sub(then)
   p(diff)
+  //我们可以计算不同单位的持续时间长度
   p(diff.Hours())
   p(diff.Minutes())
   p(diff.Seconds())
   p(diff.Nanoseconds())
+  //可以使用Add来向前推进一个给定的时间
+  //或者使用减号来倒退
   p(then.Add(diff))
   p(then.Add(-diff))
 }
 ```
 
 ## Epoch
+
+程序中的一个常见需求是获取秒、毫秒或微秒，自Unix时代，这里是Go的做法。
 
 ```go
 package main
@@ -1807,54 +1856,74 @@ func main(){
 
 ## Time Formatting / Parsing
 
+Go支持时间格式化和解析，根据基于模式的布局。
+
 ```go
 package main
 import "fmt"
 import "time"
 func main(){
   p:=fmt.Println
+  //这里是一个根据RFC3339基本的格式化时间的例子，使用响应的布局常量
   t:=time.Now()
   p(t.Format(time.RFC3339))
+  //时间解析使用格式化相同的布局值
   t1,e:=time.Parse(
     time.RFC3339,
     "2012-11-01T22:08:41+00:00"
   )
   p(t1)
+  //格式化和解析使用基于示例的布局
+  //通常你使用常量在进行布局。但你也可以提供自定义的格式。
+  //但你必须使用Mon Jan 2 15:04:05 MST 2006来作为示例
   p(t.Format("3:04PM"))
   p(t.Format("Mon Jan _2 15:04:05 2006"))
   p(t.Format("2006-01-02T15:04:05.999999-07:00"))
   form:="3 04 PM"
   t2,e:=time.Parse(form,"8 41 PM")
   p(t2)
+  //纯数字展示你可以使用标准的字符串格式化及响应部分的时间值
   fmt.Printf("%d-%02d-%02dT%02d:%02d:%02d-00:00\n",
     t.Year(),t.Month(),t.Day(),
     t.Hour(),t.Minute(),t.Second()
   )
+  //解析返回一个错误来说明是什么问题
   ansic:="Mon Jan _2 15:04:05 2006"
   _,e=time.Parse(ansic,"8:41PM")
   p(e)
 }
+```
 
 ## Random Numbers
 
-​```go
+Go的math/rand包提供产生伪随机数。
+
+```go
 package main
 import "time"
 import "fmt"
 import "math/rand"
 func main(){
+  //例如，rand.Intn产生一个随机的整数n，0<=n<100
   fmt.Print(rand.Intn(100),",")
   fmt.Print(rand.Intn(100))
   fmt.Println()
+  //rand.Float64返回一个随机的浮点数，0.0<=f<1.0
   fmt.Println(rand.Float64())
+  //这个可以用于产生其他区间的浮点数，如5.0<=f<10.0
   fmt.Print((rand.Float64()*5)+5,",")
   fmt.Print((rand.Float64()*5)+5)
   fmt.Println()
+  //默认的数字产生器是deterministic，故它每次善生的数字序列是固定的
+  //为了产生不同的序列，赋予它一个变化的种子
+  //注意，随即数字用来加密并不安全，用crypto/rand来做
   s1:=rand.NewSource(time.Now().UnixNano())
   r1:=rand.New(s1)
+  //调用产生的rand.Rand
   fmt.Print(r1.Intn(100),",")
   fmt.Print(r1.Intn(100))
   fmt.Println()
+  //如果你给Source设置了相同的数字种子，他将产生相同的随即数字序列。
   s2:=rand.NewSrouce(42)
   r2:=rand.New(s2)
   fmt.Print(r2.Intn(100),",")
@@ -1865,24 +1934,33 @@ func main(){
   fmt.Print(r3.Intn(100),",")
   fmt.Print(r3.Intn(100))
 }
+```
 
 ## Number Parsing
 
-​```go
+从字符串中解析数字是一个常见的任务，这里是Go的做法。
+
+```go
 package main
+//内置的strconv包提供了数字解析
 import "strconv"
 import "fmt"
 func main(){
+  //64代表要解析的浮点数精度
   f,_:=strconv.ParseFloat("1.234",64)
   fmt.Println(f)
+  //0代表根据字符串推断基数，64要求结果要适应64位
   i,_:=strconv.ParseInt("123",0,64)
   fmt.Println(i)
+  //ParseInt可以识别十六进制
   d,_:=strconv,Parseint("0x1c8",0,64)
   fmt.Println(d)
   u,_:=strconv.ParseUint("789",0,64)
   fmt.Println(u)
+  //atoi是十进制整数解析的简便函数
   k,_:=strconv.Atoi("135")
   fmt.Println(k)
+  //不合法的输入将导致解析函数返回一个错误
   _,e:=strconv.Atoi("wat")
   fmt.Println(e)
 }
@@ -1896,22 +1974,30 @@ import "fmt"
 import "net"
 import "net/url"
 func main(){
+  //我们解析这个示例URL，包含一个协议，授权信息，地址，端口，路径，查询参数以及查询拆分
   s:="postgres://user:pass@host.com:5432/path?k=v#f"
+  //解析这个URL并且保证没有错误
   u,err:=url.Parse(s)
   if err!=nil{
     panic(err)
   }
+  //可以直接访问协议
   fmt.Println(u.Scheme)
+  //User包含所有授权信息，调用Username和Password可以得到单独的值
   fmt.Println(u.User)
   fmt.Println(u.User.Username())
   p,_:=u.User.Password()
   fmt.Println(p)
+  //Host包含地址和端口。使用SplitHostPort来抽取他们
   fmt.Println(u.Host)
   host,port,_:=net.SplitHostPort(u.Host)
   fmt.Println(host)
   fmt.Println(port)
   fmt.Println(u.Path)
   fmt.Println(u.Fragment)
+  //为了以k=v的格式得到查询参数，使用RawQuery
+  //你也可以将查询参数解析到一个map中
+  //解析的查询参数是从字符串到字符串的片段，故索引0可以只得到第一个值
   fmt.Println(u.RawQuery)
   m,_:=url.ParseQuery(u.RawQuery)
   fmt.Println(m)
@@ -1921,15 +2007,21 @@ func main(){
 
 ## SHA1 Hashes
 
+SHA1哈希经常用于计算二进制或者文本块的短标识。例如，git版本控制系统使用SHA1来标示文本和目录。这里是Go如何计算SHA1哈希值。
+
 ```go
 package main
+//Go实现了多种哈希函数，在crypto包下
 import "crypto/sha1"
 import "fmt"
 func main(){
   s:="sha1 this string"
+  //产生一个哈希的模式是sha1.New()，sha1.Write(bytes)然后sha1.Sum([]bytes{})
   h:=sha1.New()
   h.Write([]byte(s))
+  //这里得到最终的哈希结果字节片段值。参数用于向已存在的字节片段追加，通常不需要
   bs:=h.Sum(nil)
+  //SHA1值经常用于打印成十六进制，如git提交时。使用%x格式参数来转换为十六进制
   fmt.Println(s)
   fmt.Printf("%x\n",bs)
 }
@@ -1939,6 +2031,7 @@ func main(){
 
 ```go
 package main
+//这里为引入的包起了名称，来节省下面代码的空间
 import b64 "encoding/base64"
 import "fmt"
 func main(){
@@ -1957,6 +2050,8 @@ func main(){
 
 ## Reading Files
 
+读取和写入文件是许多Go程序的基本任务需求。首先我们来看读取文件。
+
 ```go
 package main
 import(
@@ -1966,44 +2061,57 @@ import(
   "io/ioutil"
   "os"
 )
+//读取文件需要检查大多数调用是否错误，这个helper可以流水化错误检查
 func check(e error){
   if e!=nil{
     panic(e)
   }
 }
 func main(){
+  //最基本的一个文件读取任务是将所有内容放入内存中
   dat,err:=ioutil.ReadFile("/tmp/dat")
   check(err)
   fmt.Print(string(dat))
+  //如果你想对文件的那部分如何进行读取有更多的控制
+  //首先你需要打开它
   f,err:=os.Open("/tmp/dat")
   check(err)
+  //从文件的开头读取一些字节。允许到5，同时也是实际读取了的字节。
   b1:=make([]byte,5)
   n1,err:=f.Read(b1)
   check(err)
   fmt.Printf("%d bytes: %s\n",n1,string(b1))
+  //你也可以找到一个已知的位置并从那里开始读取
   o2,err:=f.Seek(6,0)
   check(err)
   b2:=make([]byte,2)
   n2,err:=f.Read(b2)
   check(err)
   fmt.Printf("%d bytes @ %d: %s\n",n2,o2,string(b2))
+  //io包提供了一些函数，对于文件读取可能很有帮助
+  //例如上面的继续读取的例子，可以使用ReadAtLeast更稳定的实现
   o3,err:=f.Seek(6,0)
   check(err)
   b3:=make([]byte,2)
   n3,err:=io.ReadAtLeast(f,b3,2)
   check(err)
   fmt.Printf("%d bytes @ %d: %s\n",n3,o3,string(b3))
+  //没有内置的退回，但是Seek(0,0)完成了这个事情
   _,err=f.Seek(0,0)
   check(err)
+  //bufio包实现了一个带缓冲区的读取，它对于一些小的读取以及由于它所提供的额外方法会很有帮助
   r4:=bufio.NewReader(f)
   b4,err:=r4.Peek(5)
   check(err)
   fmt.Printf("5 bytes: %s\n",string(b4))
+  //在完成时关闭文件(通常会在打开时通过defer计划执行)
   f.Close()
 }
 ```
 
 ## Writing Files
+
+写文件与读取的模式类似。
 
 ```go
 package main
@@ -2019,11 +2127,14 @@ func check(e error){
   }
 }
 func main(){
+  //这里将一个字符串(或者仅仅是字节)写入到一个文件。
   d1:=[]byte("hello\ngo\n")
   err:=ioutil.WriteFile("/tmp/dat1",d1,0644)
   check(err)
+  //打开一个文件以供写入
   f,err:=os.Create("/tmp/dat2")
   check(err)
+  //这是一个惯用法，在打开时立刻通过defer关闭
   defer f.Close()
   d2:=[]byte{115,111,109,101,10}
   n2,err:=f.Write(d2)
@@ -2118,6 +2229,7 @@ func main(){
 ```
 
 ## Spawning Processes
+```go
 package main
 import "fmt"
 import "io/iouitl"
@@ -2148,6 +2260,7 @@ func main(){
   fmt.Println("> ls -a -l -h")
   fmt.Pritnln(string(lsOut))
 }
+```
 
 ## Exec'ing Processes
 
