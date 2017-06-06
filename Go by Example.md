@@ -2152,7 +2152,10 @@ func main(){
 
 ## Line Filters
 
+一个行过滤器经常见于读取标准输入流的输入，处理然后输出到标准输出的程序中。grep和sed是常见的行过滤器。
+
 ```go
+//下面这个行过滤器示例将所有输入的文字转换为大写的版本
 package main
 import (
   "bufio"
@@ -2161,16 +2164,29 @@ import (
   "strings"
 )
 func main(){
+  //使用一个带缓冲的scanner可以方便的使用Scan方法来直接读取一行
+  //每次调用该方法可以让scanner读取下一行
   scanner:=bufio.NewScanner(os.Stdin)
+  //Text方法返回当前的token，现在是输入的下一行
   for scanner.Scan(){
     ucl:=strings.ToUpper(scanner.Text())
+    //输出大写的行
     fmt.Println(ucl)
   }
+  //检查scanner的错误，文件结束符不会被当作是一个错误
   if err:=scanner.Err();err!=nil{
     fmt.Fprintln(os.Stderr,"error:",err)
     os.Exit(1)
   }
 }
+```
+
+可以使用如下命令来试验这个行过滤器：
+
+```shell
+$ echo 'hello' > /tmp/lines
+$ echo 'filter' >> /tmp/lines
+$ cat /tmp/lines | go run line-filters.go
 ```
 
 ## Command-Line Arguments
