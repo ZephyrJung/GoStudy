@@ -2196,33 +2196,64 @@ package main
 import "os"
 import "fmt"
 func main(){
+  //os.Args提供原始命令行参数访问功能
+  //切片的第一个值是程序的路径
   argsWithProg:=os.Args
+  //os.Args[1:]保存程序的所有参数
   argsWithoutProg:=os.Args[1:]
+  //你可以通过自然索引获取到每个单独的参数
   arg:=os.Args[3]
   fmt.Println(argsWithProg)
   fmt.Println(argsWithoutProg)
   fmt.Println(arg)
 }
 ```
+本例应当先go build，然后再运行并指定参数
+
 ## Command-Line Flags
+
+命令行标志是一个指定特殊选项的常用方法。例如，在wc -l的-l就是一个命令行标志。
 
 ```go
 package main
+//flag包支持基本的命令行标志解析
 import "flag"
 import "fmt"
 func main(){
+  //基本的标志声明仅支持字符串、整数和布尔值选项
+  //这里声明了一个默认值为foo的字符串标志word，并带有一个简短的描述。flag.String返回一个字符串指针。
   wordPtr:=flag.String("word","foo","a string")
+  //类似声明一个整数和布尔值标志。
   numbPtr:=flag.Int("numb",42,"an int")
   boolPtr:=flag.Bool("fork",false,"a bool")
+  //可以使用程序中已有的参数声明一个标志，声明时需要指定该参数的指针
   var svar string
   flag.StringVar(&svar,"svar","bar","a string var")
+  //所有标志声明完成后，调用flag.Parse()来执行命令行解析
   flag.Parse()
+  //通过对指针解引用来获取选项的实际值
   fmt.Println("word:",*wordPtr)
   fmt.Println("numb:",*numbPtr)
   fmt.Println("fork:",*boolPtr)
   fmt.Println("svar:",svar)
   fmt.Println("tail:",flag.Args())
 }
+```
+
+测试用例：
+
+```shell
+$ go build command-line-flags.go
+# 省略的标志将自动设定为默认值
+$ ./command-line-flags -word=opt
+# 位置参数可以出现在任何标志后面
+$ ./command-line-flags -word=opt a1 a2 a3
+# flag包需要的所有标志出现在位置参数之前，否则标志将会被解析为位置参数
+$ ./command-line-flags -word=opt a1 a2 a3 -numb=7
+# 使用-h或者--help标志来得到自动生成的命令行帮助文本
+$ ./command-line-flags -h
+# 如果提供了一个没有用flag包指定的标志，将会得到错误信息和帮助文档
+$ ./command-line-flags -wat
 ```
 
 ## Environment Variables
@@ -2233,10 +2264,13 @@ import "os"
 import "strings"
 import "fmt"
 func main(){
+  //使用os.Setenv来设置一个键值对
+  //使用os.Getenv来获取一个环境变量，如果不存在，返回空字符串
   os.Setenv("FOO","1")
   fmt.Println("FOO:",os.Getenv("FOO"))
   fmt.Println("BAR:",os.Getenv("BAR"))
   fmt.Println()
+  //使用os.Environ来列出所有环境变量键值对
   for _,e:=range os.Environ(){
     pair:=strings.Split(e,"=")
     fmt.Prinln(pair[0])
@@ -2251,7 +2285,9 @@ import "fmt"
 import "io/iouitl"
 import "os/exec"
 func main(){
+  //exec.Command函数帮助我们创建一个表示这个外部进程的对象
   dateCmd:=exec.Command("date")
+  //Output等待命令运行完成，并收集命令的输出
   dateOut,err:=dateCmd.Output()
   if err!=nil{
     panic(err)
@@ -2259,8 +2295,10 @@ func main(){
   fmt.Println("> date")
   fmt.Println(string(dateOut))
   grepCmd:=exec.Command("grep","hello")
+  //获取输入输出管道
   grepIn,_:=grepCmd.StdinPipe()
   grepOut,_:=grepCmd.StdoutPipe()
+  //运行进程，写入输入信息，读取输出结果，等待程序运行结束
   grepCmd.Start()
   grepIn.Write([]byte("hello grep\ngoodbye grep"))
   grepIn.Close()
@@ -2268,6 +2306,7 @@ func main(){
   grepCmd.Wait()
   fmt.Println("> grep hello")
   fmt.Println(string(grepBytes))
+  //通过bash命令的-c选项来执行一个字符串包含的完整命令
   lsCmd:=exec.Command("bash","-c","ls -a -l -h")
   lsOut,err:=lsCmd.Output()
   if err!=nil{
@@ -2286,10 +2325,12 @@ import "syscall"
 import "os"
 import "os/exec"
 func main(){
+  //通过LookPath得到需要执行的可执行文件的绝对路径
   binary,lookErr:=exec.LookPath("ls")
   if lookErr!=nil{
     panic(lookErr)
   }
+  //Exec需要的参数是切片形式的，第一个参数为执行程序名
   args:=[]string{"ls","-a","-l","-h"}
   env:=os.Environ()
   execErr:=syscall.Exec(binary,args,env)
@@ -2308,9 +2349,13 @@ import "os"
 import "os/signal"
 import "syscall"
 func main(){
+  //Go通过向一个通道发送os.Signal值来进行信号通知
   sigs:=make(chan os.Signal,1)
+  //同时创建一个用于在程序可以结束时进行通知的通道
   done:=make(chan bool,1)
+  //注册给定通道用于接收特定信号
   signal.Notify(sigs,syscall.SIGINT,syscall.SIGTERM)
+  //Go协程执行一个阻塞的信号接收操作，当它得到一个值时，打印并通知程序可以退出
   go func(){
     sig:=<-sigs
     fmt.Println()
@@ -2323,6 +2368,8 @@ func main(){
 }
 ```
 
+运行，使用ctrl-c发送信号
+
 ## Exit
 
 ```go
@@ -2330,7 +2377,9 @@ package main
 import "fmt"
 import "os"
 func main(){
+  //当使用os.Exit时，defer将不会执行
   defer fmt.Println("!")
+  //退出，并且状态为3
   os.Exit(3)
 }
 ```
