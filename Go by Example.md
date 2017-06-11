@@ -16,8 +16,6 @@ func main(){
 
 有时候我们想让程序编译成二进制文件，可以使用`go build`，然后就可以直接运行了。
 
-现在我们已经运行及编译了基本的Go程序，让我们了解更多关于这个语言的东西吧。
-
 ## Values
 
 Go有多种值的类型，包括string，integer，float，boolean等。如下是几个基本例子。
@@ -118,8 +116,6 @@ func main(){
 ```
 
 ## If/Else
-
-Go中的if-else分支简单直接。
 
 ```go
 package main
@@ -229,8 +225,6 @@ func main(){
 
 当使用fmt.Println方法打印时，数组将以[v1 v2 v3 ... ]的形式展现
 
-在典型的Go程序中，你将发现slice用的要比array更多，我们将在下一节看到它。
-
 ## Slices
 
 slice是一个重要的数据类型，对于序列提供了比数组更强大的接口
@@ -288,10 +282,6 @@ func main(){
 
 虽然slice与array是不同的类型，但是使用fmt.Println的展示结果很相似
 
-可以通过这篇Go团队的[文章](https://blog.golang.org/go-slices-usage-and-internals)来获得设计和实现slice的更多细节
-
-现在我们看完了array和slice，下面是另一个重要的内置数据结构：map
-
 ## Maps
 
 Map是Go内置的关联数据类型（其他语言可能成为哈希或者字典）
@@ -328,7 +318,7 @@ map将以[ k:v k:v ]的形式打印
 
 ## Range
 
-range可以遍历各种数据结构中的元素。让我们看看range是如何在我们已经学过的数据结构中应用的。
+range可以遍历各种数据结构中的元素。
 
 ```go
 package main
@@ -365,8 +355,6 @@ func main(){
 
 ## Functions
 
-函数是Go的核心内容。我们将通过不同的例子来学习函数的相关内容。
-
 ```go
 package main
 import "fmt"
@@ -387,8 +375,6 @@ func main(){
   fmt.Println("1+2+3=",res)
 }
 ```
-
-Go函数还有些其他的特色，其中一个是返回多个值，我们在下一节看。
 
 ## Multiple Return Values
 
@@ -411,8 +397,6 @@ func main(){
   fmt.Println(c)
 }
 ```
-
-接受不同个数的参数是Go函数的另一个很棒的特点，我们将在下一节看到。
 
 ## Variadic Functions
 
@@ -438,8 +422,6 @@ func main(){
   sum(nums...)
 }
 ```
-
-关于Go函数另一个关键方面是它形成闭包的能力，下一节可以看到。
 
 ## Closures
 
@@ -472,8 +454,6 @@ func main(){
 }
 ```
 
-函数的最后一个特点是递归。
-
 ## Recursion
 
 Go支持递归函数。下面是一个经典的斐波那契数列示例
@@ -492,8 +472,6 @@ func main(){
   fmt.Println(fact(7))
 }
 ```
-
-下一节：指针。
 
 ## Pointers
 
@@ -591,8 +569,6 @@ func main(){
 }
 ```
 
-接下来我们将看到Go组织和命名相关方法的集合的机制：接口
-
 ## Interfaces
 
 接口是方法签名的命名集合。
@@ -640,10 +616,6 @@ func main(){
   measure(c)
 }
 ```
-
-关于接口，想要了解更多，可以查看[great blog post](http://jordanorelli.tumblr.com/post/32665860244/how-to-use-interfaces-in-go).
-
-下一节，Errors。
 
 ## Errors
 
@@ -709,8 +681,6 @@ func main(){
 }
 ```
 
-关于错误处理更多内容，可以看Go博客中的[great post](http://blog.golang.org/2011/07/error-handling-and-go.html)
-
 ## Goroutines
 
 goroutine是一个轻量级的执行线程。
@@ -741,8 +711,6 @@ func main(){
 ```
 
 当我们运行这个程序的时候，我们将首先看到阻塞调用，然后是两个goroutine的交错输出。这个交错反应了goroutine在Go运行时是并发执行的。
-
-下面我们来看下并发Go程序对goroutine的补充：channel。
 
 ## Channels
 
@@ -995,8 +963,6 @@ func main(){
 }
 ```
 
-关闭通道令我们自然而然的想到下一个例子：遍历通道。
-
 ## Range over Channels
 
 在前面的例子中，我们看到如何使用for和range来遍历基本的数据结构。我们同样可以使用这个语法来遍历通道上接收的值。
@@ -1202,8 +1168,6 @@ func main(){
 
 运行程序可以看到我们执行了大约40,000次操作。
 
-接下来我们将看看互斥，另一个用于管理状态的工具。
-
 ## Mutexes
 
 在前面的例子中我们看到如何使用原子操作管理简单的计数器状态。为了处理更复杂的状态，我们可以使用一个`mutext`来安全的访问不同gorotine之间的数据。
@@ -1274,8 +1238,6 @@ func main(){
 ```
 
 运行程序可以看到我们在mutex同步状态上执行了将近90,000操作。
-
-下一节我们将看到如何仅仅使用goroutine和channel实现同样的状态管理
 
 ## Stateful Goroutines
 
